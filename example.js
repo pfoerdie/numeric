@@ -2,6 +2,8 @@ const
     // numeric = require("numeric"),
     { Vec2, Vec3 } = Vector = require("./Vector.js");
 
+// console.log(Object.keys(numeric));
+
 let
     v0 = new Vec2(1, 2),
     v1 = Vector.from([1, 2, 3]);

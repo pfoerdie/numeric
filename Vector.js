@@ -4,9 +4,14 @@ class Vector extends Float64Array {
 
     constructor(...args) {
         _.assert(new.target !== Vector, "abstract class");
+        _.assert(args.every(_.is.number), "not all numbers");
         super(args);
     }
 
+    /**
+     * vector addition
+     * @param  {...Vector} vecs 
+     */
     static add(...vecs) {
         _.assert(vecs.length > 1, "to few arguments");
         _.assert(vecs.every(vec => vec instanceof Vector), "not all vectors");
@@ -16,6 +21,24 @@ class Vector extends Float64Array {
         for (let vec of vecs) {
             for (let i in res) {
                 res[i] += vec[i];
+            }
+        }
+        return res;
+    }
+
+    /**
+     * entrywise multiplication (hadamard product)
+     * @param  {...Vector} vecs 
+     */
+    static hadMult(...vecs) {
+        _.assert(vecs.length > 1, "to few arguments");
+        _.assert(vecs.every(vec => vec instanceof Vector), "not all vectors");
+        let size = vecs[0].length;
+        _.assert(vecs.every(vec => vec.length === size), "different length vectors");
+        let res = Vector.of(size).fill(1);
+        for (let vec of vecs) {
+            for (let i in res) {
+                res[i] *= vec[i];
             }
         }
         return res;
@@ -45,7 +68,6 @@ class Vector extends Float64Array {
 
     static from(arr) {
         _.assert(_.is.array(arr), "no array");
-        _.assert(arr.every(_.is.number), "not only numbers");
         switch (arr.length) {
             case 1: return new Vec1(...arr);
             case 2: return new Vec2(...arr);

@@ -4,15 +4,13 @@ class Vector extends Float64Array {
 
     /**
      * Constructs a vector of given length.
-     * @param {number} length 
+     * @param {number} len 
      * @constructs Vector
-     * @constructs Float64Array
-     * @constructs Array<number>
+     * @extends Float64Array
      */
-    constructor(length) {
-        length = parseInt(length);
-        _.assert(_.is.number(length) && length > 0, "invalid length");
-        super(length);
+    constructor(len) {
+        _.assert(_.is.number(len) && len > 0 && len < Infinity && Math.trunc(len) === len, "invalid length");
+        super(len);
     }
 
     /**
@@ -24,6 +22,12 @@ class Vector extends Float64Array {
         return this[0];
     }
 
+    set value(val) {
+        _.assert(this.length === 1, "wrong length");
+        _.assert(_.is.number(val), "not a number");
+        this[0] = val;
+    }
+
     /**
      * X-value for 2d- and 3d-vectors.
      * @type {number}
@@ -31,6 +35,12 @@ class Vector extends Float64Array {
     get x() {
         _.assert(this.length === 2 || this.length === 3, "wrong length");
         return this[0];
+    }
+
+    set x(val) {
+        _.assert(this.length === 2 || this.length === 3, "wrong length");
+        _.assert(_.is.number(val), "not a number");
+        this[0] = val;
     }
 
     /**
@@ -42,6 +52,12 @@ class Vector extends Float64Array {
         return this[1];
     }
 
+    set y(val) {
+        _.assert(this.length === 2 || this.length === 3, "wrong length");
+        _.assert(_.is.number(val), "not a number");
+        this[1] = val;
+    }
+
     /**
      * Z-value for 3d-vectors.
      * @type {number}
@@ -51,53 +67,41 @@ class Vector extends Float64Array {
         return this[2];
     }
 
-    /**
-     * Add any number of vectors to this.
-     * @param  {...Vector} vecs 
-     * @returns {Vector} this vector
-     */
-    add(...vecs) {
-        _.assert(vecs.every(vec => vec instanceof Vector), "not all vectors");
-        _.assert(vecs.every(vec.length === this.length), "different length vectors");
-        for (let vec of vecs) {
-            vec.forEach((val, i) => { this[i] += val });
-        }
-        return this;
-    }
-
-    /**
-     * Multiply entrywise any number of vectors to this.
-     * @param  {...Vector} vecs 
-     * @returns {Vector} this vector
-     */
-    hadMult(...vecs) {
-        _.assert(vecs.every(vec => vec instanceof Vector), "not all vectors");
-        _.assert(vecs.every(vec.length === this.length), "different length vectors");
-        for (let vec of vecs) {
-            vec.forEach((val, i) => { this[i] *= val });
-        }
-        return this;
+    set z(val) {
+        _.assert(this.length === 3, "wrong length");
+        _.assert(_.is.number(val), "not a number");
+        this[2] = val;
     }
 
     /**
      * Constructs a vector of given length.
-     * @param {number} length 
+     * @param {number} len 
+     * @param {number|Vec1} [val=0]
      * @returns {Vector} new vector
      */
-    static of(length) {
-        return new Vector(length);
+    static of(len, val = 0) {
+        let res = new Vector(len);
+        if (!val) return res;
+        let isVec1 = val instanceof Vec1;
+        for (let i = 0; i < len; i++) {
+            res[i] = isVec1 ? val[0] : val;
+        }
+        return res;
     }
 
     /**
      * Constructs a vector from a number array.
-     * @param {Array<number>} arr
+     * @param {Vector|Array<number>} arr
      * @returns {Vector} new vector
      */
     static from(arr) {
-        _.assert(_.is.array(arr), "no array");
+        _.assert(arr instanceof Vector || Array.isArray(arr), "no array");
         _.assert(arr.every(_.is.number), "not all numbers");
-        let res = new Vector(arr.length);
-        arr.forEach((val, i) => { res[i] = val });
+        let res = Vector.of(arr.length, 0);
+        let len = arr.length;
+        for (let i = 0; i < len; i++) {
+            res[i] = arr[i];
+        }
         return res;
     }
 
@@ -133,11 +137,13 @@ class Vector extends Float64Array {
     static sum(...vecs) {
         _.assert(vecs.length > 0, "to few arguments");
         _.assert(vecs.every(vec => vec instanceof Vector), "not all vectors");
-        let size = vecs[0].length;
-        _.assert(vecs.every(vec => vec.length === size), "different length vectors");
-        let res = new Vector(size);
+        let len = vecs[0].length;
+        _.assert(vecs.every(vec => vec.length === len), "different length vectors");
+        let res = Vector.of(len, 0);
         for (let vec of vecs) {
-            vec.forEach((val, i) => { res[i] += val });
+            for (let i = 0; i < len; i++) {
+                res[i] += vec[i];
+            }
         }
         return res;
     }
@@ -150,11 +156,13 @@ class Vector extends Float64Array {
     static hadProd(...vecs) {
         _.assert(vecs.length > 0, "to few arguments");
         _.assert(vecs.every(vec => vec instanceof Vector), "not all vectors");
-        let size = vecs[0].length;
-        _.assert(vecs.every(vec => vec.length === size), "different length vectors");
-        let res = new Vector(size).fill(1);
+        let len = vecs[0].length;
+        _.assert(vecs.every(vec => vec.length === len), "different length vectors");
+        let res = Vector.of(len, 1);
         for (let vec of vecs) {
-            vec.forEach((val, i) => { res[i] *= val });
+            for (let i = 0; i < len; i++) {
+                res[i] *= vec[i];
+            }
         }
         return res;
     }
@@ -165,7 +173,19 @@ class Vector extends Float64Array {
      * @returns {Vec1} new vector
      */
     static dotProd(...vecs) {
-        // TODO
+        _.assert(vecs.length > 0, "to few arguments");
+        _.assert(vecs.every(vec => vec instanceof Vector), "not all vectors");
+        let len = vecs[0].length;
+        _.assert(vecs.every(vec => vec.length === len), "different length vectors");
+        let res = Vector.of(1, 0);
+        for (let i = 0; i < len; i++) {
+            let tmp = Vector.of(1, 1);
+            for (let vec of vecs) {
+                tmp[0] *= vec[i];
+            }
+            res[0] += tmp[0];
+        }
+        return res;
     }
 
     /**
@@ -176,10 +196,20 @@ class Vector extends Float64Array {
     }
 
     /**
-     * TODO
+     * 
+     * @param {Vector} vec 
+     * @param {number|Vec1} scalar 
      */
-    static scalarProd() {
-        // TODO
+    static scalarProd(vec, scalar) {
+        _.assert(vec instanceof Vector, "not a vector");
+        let isVec1 = scalar instanceof Vec1;
+        _.assert(isVec1 || _.is.number(scalar), "not a scalar");
+        let len = vec.length;
+        let res = Vector.from(vec);
+        for (let i = 0; i < len; i++) {
+            res[i] *= isVec1 ? scalar[0] : scalar;
+        }
+        return res;
     }
 
     /**
@@ -188,16 +218,28 @@ class Vector extends Float64Array {
      * @returns {Vector} new vector
      */
     static negative(vec) {
-        // TODO
+        _.assert(vec instanceof Vector, "not a vector");
+        let len = vec.length;
+        let res = Vector.of(len, 0);
+        for (let i = 0; i < len; i++) {
+            res[i] -= vec[i];
+        }
+        return res;
     }
 
     /**
      * Returns the entrywise inverse of a vector.
      * @param {Vector} vec 
-     * @returns {Vector} new Vector
+     * @returns {Vector} new vector
      */
     static inverse(vec) {
-        // TODO
+        _.assert(vec instanceof Vector, "not a vector");
+        let len = vec.length;
+        let res = Vector.of(len, 1);
+        for (let i = 0; i < len; i++) {
+            res[i] /= vec[i];
+        }
+        return res;
     }
 
     /**
@@ -206,7 +248,13 @@ class Vector extends Float64Array {
      * @returns {Vector} new vector
      */
     static euklNorm(vec) {
-        // TODO
+        let dist = Vector.euklDist(vec);
+        let len = vec.length;
+        let res = Vector.from(vec);
+        for (let i = 0; i < len; i++) {
+            res[i] /= dist[0];
+        }
+        return res;
     }
 
     /**
@@ -215,7 +263,14 @@ class Vector extends Float64Array {
      * @returns {Vec1} new vector
      */
     static euklDist(vec) {
-        // TODO
+        _.assert(vec instanceof Vector, "not a vector");
+        let len = vec.length;
+        let res = Vector.of(1, 0);
+        for (let i = 0; i < len; i++) {
+            res[0] += vec[i] * vec[i];
+        }
+        res[0] = Math.sqrt(res[0]);
+        return res;
     }
 
 }
@@ -232,8 +287,8 @@ class Vec1 extends Vector {
         return vec instanceof Vector && vec.length === 1;
     }
 
-    static of(length = 1) {
-        _.assert(length === 1, "invalid length");
+    static of(val) {
+        return Vector.of(1, val);
     }
 
     static from(arr) {
@@ -255,8 +310,8 @@ class Vec2 extends Vector {
         return vec instanceof Vector && vec.length === 2;
     }
 
-    static of(length = 2) {
-        _.assert(length === 2, "invalid length");
+    static of(val) {
+        return Vector.of(2, val);
     }
 
     static from(arr) {
@@ -278,8 +333,8 @@ class Vec3 extends Vector {
         return vec instanceof Vector && vec.length === 3;
     }
 
-    static of(length = 3) {
-        _.assert(length === 3, "invalid length");
+    static of(val) {
+        return Vector.of(3, val)
     }
 
     static from(arr) {

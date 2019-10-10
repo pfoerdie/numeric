@@ -20,7 +20,7 @@ exports.assert = function assert(value, errMsg, errType = Error) {
 
 exports.is = {
     number: function (value) {
-        return typeof value === 'number' && !isNaN(value) && value < Infinity && value > -Infinity;
+        return typeof value === 'number' && !isNaN(value);
     },
     string: function (value) {
         return typeof value === 'string';

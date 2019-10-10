@@ -12,7 +12,10 @@ let
 console.log(v0 instanceof Vec2, v1 instanceof Vec3);
 console.log(`Vec${v0.length}:`, v0);
 console.log(`Vec${v1.length}:`, v1);
-console.log(Vector.add(v0, Vector.from([2, 3])));
-console.log(Vector.hadMult(new Vec3(3, Math.PI, 4), v1));
+console.log(Vector.sum(v0, Vector.from([2, 3])));
+console.log(Vector.hadProd(new Vec3(3, Math.PI, 4), v1));
+console.log(Vector.scalarProd(v1, new Vec1(2)));
+console.log(Vector.inverse(Vector.sum(v0, Vector.from([0, -2]))));
+console.log(Vec2.of(3), Vector.of(2, 3));
 
 console.log(new Matrix(5, 2));

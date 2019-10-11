@@ -77,7 +77,7 @@ class Vector extends Float64Array {
      * Constructs a vector of given length.
      * @param {number} len 
      * @param {number|Vec1} [val=0]
-     * @returns {Vector} new vector
+     * @returns {Vector} 
      */
     static of(len, val = 0) {
         let res = new Vector(len);
@@ -92,7 +92,7 @@ class Vector extends Float64Array {
     /**
      * Constructs a vector from a number array.
      * @param {Vector|Array<number>} arr
-     * @returns {Vector} new vector
+     * @returns {Vector} 
      */
     static from(arr) {
         _.assert(arr instanceof Vector || Array.isArray(arr), "no array");
@@ -132,7 +132,7 @@ class Vector extends Float64Array {
     /**
      * Returns the sum of any number of vectors.
      * @param  {...Vector} vecs 
-     * @returns {Vector} new vector
+     * @returns {Vector} 
      */
     static sum(...vecs) {
         _.assert(vecs.length > 0, "to few arguments");
@@ -151,7 +151,7 @@ class Vector extends Float64Array {
     /**
      * Returns the entrywise product of any number of vectors.
      * @param  {...Vector} vecs 
-     * @returns {Vector} new vector
+     * @returns {Vector} 
      */
     static hadProd(...vecs) {
         _.assert(vecs.length > 0, "to few arguments");
@@ -170,7 +170,7 @@ class Vector extends Float64Array {
     /**
      * Returns the dot product of any numer of vectors.
      * @param  {...Vector} vecs 
-     * @returns {Vec1} new vector
+     * @returns {Vec1} 
      */
     static dotProd(...vecs) {
         _.assert(vecs.length > 0, "to few arguments");
@@ -189,16 +189,25 @@ class Vector extends Float64Array {
     }
 
     /**
-     * TODO
+     * Returns the cross product of 2 3d-vectors.
+     * @param {Vec3} vecA
+     * @param {Vec3} vecB 
+     * @returns {Vec3}
      */
-    static crossProd() {
-        // TODO
+    static crossProd(vecA, vecB) {
+        _.assert(vecA instanceof Vec3 && vecB instanceof Vec3, "not all 3d-vectors");
+        let res = Vector.of(3, 0);
+        res[0] = vecA[1] * vecB[2] - vecA[2] * vecB[1];
+        res[1] = vecA[2] * vecB[0] - vecA[0] * vecB[2];
+        res[2] = vecA[0] * vecB[1] - vecA[1] * vecB[0];
+        return res;
     }
 
     /**
-     * 
+     * Returns the scalar product of a vector.
      * @param {Vector} vec 
      * @param {number|Vec1} scalar 
+     * @returns {Vector}
      */
     static scalarProd(vec, scalar) {
         _.assert(vec instanceof Vector, "not a vector");
@@ -215,7 +224,7 @@ class Vector extends Float64Array {
     /**
      * Returns the entrywise negative of a vector.
      * @param {Vector} vec 
-     * @returns {Vector} new vector
+     * @returns {Vector} 
      */
     static negative(vec) {
         _.assert(vec instanceof Vector, "not a vector");
@@ -230,7 +239,7 @@ class Vector extends Float64Array {
     /**
      * Returns the entrywise inverse of a vector.
      * @param {Vector} vec 
-     * @returns {Vector} new vector
+     * @returns {Vector} 
      */
     static inverse(vec) {
         _.assert(vec instanceof Vector, "not a vector");
@@ -245,7 +254,7 @@ class Vector extends Float64Array {
     /**
      * Returns the euklidean norm of a vector.
      * @param {Vector} vec 
-     * @returns {Vector} new vector
+     * @returns {Vector} 
      */
     static euklNorm(vec) {
         let dist = Vector.euklDist(vec);
@@ -260,7 +269,7 @@ class Vector extends Float64Array {
     /**
      * Returns the euklidean distance of a vector.
      * @param {Vector} vec 
-     * @returns {Vec1} new vector
+     * @returns {Vec1} 
      */
     static euklDist(vec) {
         _.assert(vec instanceof Vector, "not a vector");

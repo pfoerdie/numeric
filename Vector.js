@@ -276,7 +276,8 @@ class Vector extends Float64Array {
         let len = vec.length;
         let res = Vector.of(1, 0);
         for (let i = 0; i < len; i++) {
-            res[0] += vec[i] * vec[i];
+            let tmp = vec[i];
+            res[0] += tmp * tmp;
         }
         res[0] = Math.sqrt(res[0]);
         return res;

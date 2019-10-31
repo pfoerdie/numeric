@@ -1,6 +1,7 @@
 const
     // numeric = require("numeric"),
     { Vec1, Vec2, Vec3 } = Vector = require("./Vector.js"),
+    TensorVector = require("./TensorVector.js"),
     Matrix = require("./Matrix.js");
 
 // console.log(Object.keys(numeric));
@@ -19,3 +20,5 @@ console.log(Vector.inverse(Vector.sum(v0, Vector.from([0, -2]))));
 console.log(Vec2.of(3), Vector.of(2, 3));
 
 console.log(new Matrix(5, 2));
+
+console.log(TensorVector.from([1, 2, 3]).value.then(console.log));

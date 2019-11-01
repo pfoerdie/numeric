@@ -82,9 +82,17 @@ class Vector extends Float64Array {
     static of(len, val = 0) {
         let res = new Vector(len);
         if (!val) return res;
-        let isVec1 = val instanceof Vec1;
+        let isVec = val instanceof Vec1;
+        let isFn = (typeof val === "function");
+        _.assert(isVec || isFn || _.is.number(val), "not a number");
         for (let i = 0; i < len; i++) {
-            res[i] = isVec1 ? val[0] : val;
+            if (isFn) {
+                let v = val(i);
+                _.assert(_.is.number(v), "not a number");
+                res[i] = v;
+            } else {
+                res[i] = isVec ? val[0] : val;
+            }
         }
         return res;
     }
@@ -334,7 +342,7 @@ class Vec3 extends Vector {
     }
 
     static of(val) {
-        return Vector.of(3, val)
+        return Vector.of(3, val);
     }
 
     static from(arr) {

@@ -1,4 +1,4 @@
-const _ = require("./tools.js");
+const _ = require("../tools.js");
 const Tf = require("@tensorflow/tfjs");
 // const Tf = require("@tensorflow/tfjs-node");
 
@@ -32,7 +32,10 @@ class Vector {
      */
     static of(len, val = 0) {
         let arr = new Array(len).fill(val);
-        let res = new Vector(arr);
+        arr = (typeof val === "function")
+            ? arr.map((v, i) => val(i))
+            : arr.fill(val);
+        let res = new Vector(...arr);
         return res;
     }
 
@@ -47,6 +50,24 @@ class Vector {
         let res = new Vector(...arr);
         return res;
     }
+
+    /**
+     * Returns the sum of any number of vectors.
+     * @param  {...Vector} vecs 
+     * @returns {Vector} new vector
+     */
+    static sum(...vecs) {
+        _.assert(vecs.length > 0, "to few arguments");
+        _.assert(vecs.every(vec => vec instanceof Vector), "not all vectors");
+        let len = vecs[0].length;
+        _.assert(vecs.every(vec => vec.length === len), "different length vectors");
+        let res = Vector.of(len, 0);
+        for (let vec of vecs) {
+            res.#tensor = res.#tensor.add(vec.#tensor);
+        }
+        return res;
+    }
+
 }
 
 module.exports = Vector;

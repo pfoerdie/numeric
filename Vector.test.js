@@ -1,8 +1,6 @@
 const
     // numeric = require("numeric"),
-    { Vec1, Vec2, Vec3 } = Vector = require("./Vector.js"),
-    TensorVector = require("./TensorVector.js"),
-    Matrix = require("./Matrix.js");
+    { Vec1, Vec2, Vec3 } = Vector = require("./Vector.js");
 
 // console.log(Object.keys(numeric));
 
@@ -16,9 +14,6 @@ console.log(`Vec${v1.length}:`, v1);
 console.log(Vector.sum(v0, Vector.from([2, 3])));
 console.log(Vector.hadProd(new Vec3(3, Math.PI, 4), v1));
 console.log(Vector.scalarProd(v1, new Vec1(2)));
+console.log(Vector.scalarProd(v1, Vec1.of(Math.random)));
 console.log(Vector.inverse(Vector.sum(v0, Vector.from([0, -2]))));
-console.log(Vec2.of(3), Vector.of(2, 3));
-
-console.log(new Matrix(5, 2));
-
-console.log(TensorVector.from([1, 2, 3]).value.then(console.log));
+console.log(Vec2.of(3), Vector.of(2, Math.random));

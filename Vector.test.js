@@ -4,9 +4,9 @@ const
 
 // console.log(Object.keys(numeric));
 
-// let
-//     v0 = new Vec2(1, 2),
-//     v1 = Vector.from([1, 2, 3]);
+let
+    v0 = new Vec2(1, 2),
+    v1 = Vector.from([1, 2, 3]);
 
 console.log(v0 instanceof Vec2, v1 instanceof Vec3);
 console.log(`Vec${v0.length}:`, v0);

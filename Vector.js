@@ -14,6 +14,22 @@ class Vector extends Float64Array {
     }
 
     /**
+     * Returns the primitive value, which is the first entry for length = 1 and the whole array for greater length.
+     * @returns {number|Array<number>}
+     */
+    valueOf() {
+        return (this.length === 1) ? this[0] : Array.from(this);
+    }
+
+    /**
+     * Returns the vector as array.
+     * @returns {Array<number>}
+     */
+    toJSON() {
+        return Array.from(this);
+    }
+
+    /**
      * Value of 1d-vectors.
      * @type {number}
      */
@@ -76,8 +92,9 @@ class Vector extends Float64Array {
     /**
      * Constructs a vector of given length.
      * @param {number} len 
-     * @param {number|Vec1} [val=0]
+     * @param {number|Vec1|Function<number>} [val=0]
      * @returns {Vector} 
+     * @static
      */
     static of(len, val = 0) {
         let res = new Vector(len);
@@ -101,11 +118,12 @@ class Vector extends Float64Array {
      * Constructs a vector from a number array.
      * @param {Vector|Array<number>} arr
      * @returns {Vector} 
+     * @static
      */
     static from(arr) {
         _.assert(arr instanceof Vector || Array.isArray(arr), "no array");
         _.assert(arr.every(_.is.number), "not all numbers");
-        let res = Vector.of(arr.length, 0);
+        let res = Vector.of(arr.length);
         let len = arr.length;
         for (let i = 0; i < len; i++) {
             res[i] = arr[i];
@@ -116,6 +134,7 @@ class Vector extends Float64Array {
     /**
      * Convenient class for 1d-vectors.
      * @type {class}
+     * @static
      */
     static get Vec1() {
         return Vec1;
@@ -124,6 +143,7 @@ class Vector extends Float64Array {
     /**
      * Convenient class for 2d-vectors.
      * @type {class}
+     * @static
      */
     static get Vec2() {
         return Vec2;
@@ -132,22 +152,32 @@ class Vector extends Float64Array {
     /**
      * Convenient class for 3d-vectors.
      * @type {class}
+     * @static
      */
     static get Vec3() {
         return Vec3;
+    }
+
+    static equality(...vecs) {
+        _.assert(vecs.length > 1, "to few arguments");
+        _.assert(vecs.every(vec => vec instanceof Vector), "not all vectors");
+        let first = vecs.shift();
+        _.assert(vecs.every(vec => vec.length === first.length), "different length vectors");
+        return vecs.every(vec => Vector.metric(first, vec, Vector.taxiNorm) < first.length * Number.EPSILON);
     }
 
     /**
      * Returns the sum of any number of vectors.
      * @param  {...Vector} vecs 
      * @returns {Vector} 
+     * @static
      */
     static sum(...vecs) {
         _.assert(vecs.length > 0, "to few arguments");
         _.assert(vecs.every(vec => vec instanceof Vector), "not all vectors");
         let len = vecs[0].length;
         _.assert(vecs.every(vec => vec.length === len), "different length vectors");
-        let res = Vector.of(len, 0);
+        let res = Vector.of(len);
         for (let vec of vecs) {
             for (let i = 0; i < len; i++) {
                 res[i] += vec[i];
@@ -160,6 +190,7 @@ class Vector extends Float64Array {
      * Returns the entrywise product of any number of vectors.
      * @param  {...Vector} vecs 
      * @returns {Vector} 
+     * @static
      */
     static hadProd(...vecs) {
         _.assert(vecs.length > 0, "to few arguments");
@@ -179,13 +210,14 @@ class Vector extends Float64Array {
      * Returns the dot product of any numer of vectors.
      * @param  {...Vector} vecs 
      * @returns {Vec1} 
+     * @static
      */
     static dotProd(...vecs) {
         _.assert(vecs.length > 0, "to few arguments");
         _.assert(vecs.every(vec => vec instanceof Vector), "not all vectors");
         let len = vecs[0].length;
         _.assert(vecs.every(vec => vec.length === len), "different length vectors");
-        let res = Vector.of(1, 0);
+        let res = Vector.of(1);
         for (let i = 0; i < len; i++) {
             let tmp = Vector.of(1, 1);
             for (let vec of vecs) {
@@ -201,10 +233,11 @@ class Vector extends Float64Array {
      * @param {Vec3} vecA
      * @param {Vec3} vecB 
      * @returns {Vec3}
+     * @static
      */
     static crossProd(vecA, vecB) {
         _.assert(vecA instanceof Vec3 && vecB instanceof Vec3, "not all 3d-vectors");
-        let res = Vector.of(3, 0);
+        let res = Vector.of(3);
         res[0] = vecA[1] * vecB[2] - vecA[2] * vecB[1];
         res[1] = vecA[2] * vecB[0] - vecA[0] * vecB[2];
         res[2] = vecA[0] * vecB[1] - vecA[1] * vecB[0];
@@ -216,15 +249,16 @@ class Vector extends Float64Array {
      * @param {Vector} vec 
      * @param {number|Vec1} scalar 
      * @returns {Vector}
+     * @static
      */
     static scalarProd(vec, scalar) {
         _.assert(vec instanceof Vector, "not a vector");
-        let isVec1 = scalar instanceof Vec1;
-        _.assert(isVec1 || _.is.number(scalar), "not a scalar");
+        let isVec = scalar instanceof Vec1;
+        _.assert(isVec || _.is.number(scalar), "not a scalar");
         let len = vec.length;
         let res = Vector.from(vec);
         for (let i = 0; i < len; i++) {
-            res[i] *= isVec1 ? scalar[0] : scalar;
+            res[i] *= isVec ? scalar[0] : scalar;
         }
         return res;
     }
@@ -233,13 +267,30 @@ class Vector extends Float64Array {
      * Returns the entrywise negative of a vector.
      * @param {Vector} vec 
      * @returns {Vector} 
+     * @static
      */
     static negative(vec) {
         _.assert(vec instanceof Vector, "not a vector");
         let len = vec.length;
-        let res = Vector.of(len, 0);
+        let res = Vector.of(len);
         for (let i = 0; i < len; i++) {
-            res[i] -= vec[i];
+            res[i] = -1 * vec[i];
+        }
+        return res;
+    }
+
+    /**
+     * Returns the entrywise absolute of a vector.
+     * @param {Vector} vec 
+     * @returns {Vector} 
+     * @static
+     */
+    static absolute(vec) {
+        _.assert(vec instanceof Vector, "not a vector");
+        let len = vec.length;
+        let res = Vector.of(len);
+        for (let i = 0; i < len; i++) {
+            res[i] = Math.sign(vec[i]) * vec[i];
         }
         return res;
     }
@@ -248,46 +299,123 @@ class Vector extends Float64Array {
      * Returns the entrywise inverse of a vector.
      * @param {Vector} vec 
      * @returns {Vector} 
+     * @static
      */
     static inverse(vec) {
         _.assert(vec instanceof Vector, "not a vector");
         let len = vec.length;
-        let res = Vector.of(len, 1);
+        let res = Vector.of(len);
         for (let i = 0; i < len; i++) {
-            res[i] /= vec[i];
+            res[i] = 1 / vec[i];
         }
         return res;
     }
 
     /**
-     * Returns the euklidean norm of a vector.
+     * Returns the unit vector of a vector.
      * @param {Vector} vec 
-     * @returns {Vector} 
+     * @param {Function} [norm=Vector.euclNorm]
+     * @returns {Vector}
+     * @static
      */
-    static euklNorm(vec) {
-        let dist = Vector.euklDist(vec);
+    static unit(vec, norm = Vector.euclNorm) {
+        _.assert(vec instanceof Vector, "not a vector");
+        _.assert(Vector.isNorm(norm), "invalid norm");
+        let len = norm(vec);
+        _.assert(len > 0, "zero length vector");
+        return Vector.scalarProd(vec, Vector.inverse(len));
+    }
+
+    /**
+     * Returns the p-norm of a vector.
+     * @param {Vector} vec 
+     * @param {number} p
+     * @returns {Vec1} 
+     * @static
+     */
+    static pNorm(vec, p) {
+        _.assert(vec instanceof Vector, "not a vector");
+        _.assert(_.is.number(p) && p > 0 && p <= Infinity && Math.trunc(p) === p, "invalid p");
         let len = vec.length;
-        let res = Vector.from(vec);
-        for (let i = 0; i < len; i++) {
-            res[i] /= dist[0];
+        let res = Vector.of(1);
+        if (p < Infinity) {
+            for (let i = 0; i < len; i++) {
+                res[0] += (Math.sign(vec[i]) * vec[i]) ** p;
+            }
+            res[0] = res[0] ** (1 / p);
+        } else {
+            for (let i = 0; i < len; i++) {
+                if (vec[i] > res[0]) res[0] = vec[i];
+            }
         }
         return res;
     }
 
     /**
-     * Returns the euklidean distance of a vector.
+     * Returns the taxicap-/manhatten norm of a vector (p=1 norm).
      * @param {Vector} vec 
      * @returns {Vec1} 
+     * @static
      */
-    static euklDist(vec) {
-        _.assert(vec instanceof Vector, "not a vector");
-        let len = vec.length;
-        let res = Vector.of(1, 0);
-        for (let i = 0; i < len; i++) {
-            let tmp = vec[i];
-            res[0] += tmp * tmp;
+    static taxiNorm(vec) {
+        return Vector.pNorm(vec, 1);
+    }
+
+    /**
+     * Returns the euclidean norm of a vector (p=2 norm).
+     * @param {Vector} vec 
+     * @returns {Vec1} 
+     * @static
+     */
+    static euclNorm(vec) {
+        return Vector.pNorm(vec, 2);
+    }
+
+    /**
+     * Returns the maximum norm of a vector (p=Infinity norm).
+     * @param {Vector} vec 
+     * @returns {Vec1} 
+     * @static
+     */
+    static maxNorm(vec) {
+        return Vector.pNorm(vec, Infinity);
+    }
+
+    /**
+     * Checks if a function is an actual norm.
+     * @param {Function} [norm] 
+     * @returns {boolean}
+     * @static
+     */
+    static isNorm(norm) {
+        switch (norm) {
+            case Vector.taxiNorm:
+            case Vector.euclNorm:
+            case Vector.maxNorm:
+                return true;
         }
-        res[0] = Math.sqrt(res[0]);
+        return false;
+    }
+
+    /**
+     * Returns the metric of two vectors using the pNorm.
+     * @param {Vector} vecA 
+     * @param {Vector} vecB 
+     * @param {number} [p=2]
+     * @returns {Vec1} 
+     * @static
+     */
+    static metric(vecA, vecB, norm = Vector.euclNorm) {
+        // TODO
+        _.assert(vecA instanceof Vector && vecB instanceof Vector, "not all vectors");
+        _.assert(vecA.length === vecB.length, "different length vectors");
+        _.assert(Vector.isNorm(norm), "invalid norm");
+        let len = vecA.length;
+        let vec = Vector.of(len);
+        for (let i = 0; i < len; i++) {
+            vec[i] = vecA[i] - vecB[i];
+        }
+        let res = norm(vec);
         return res;
     }
 

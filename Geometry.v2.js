@@ -148,7 +148,7 @@ class Position extends Vector {
     }
 
     static from(args) {
-        _.assert(_.is.array(args), "not an array");
+        _.assert(_.is.array(args) || args instanceof Vector, "not an array");
         return new Position(...args);
     }
 
@@ -167,8 +167,7 @@ class Point extends Geometry {
     }
 
     static from(coords) {
-        _.assert(_.is.array(coords) && coords.length > 0, "not an array");
-        let pos = new Position(...coords);
+        let pos = Position.from(coords);
         return new Point(pos);
     }
 
@@ -257,7 +256,6 @@ class LineString extends Geometry {
         _.assert(lineArr.length > 0, "too few lines");
         _.assert(lineArr.every((line, i) => i === 0 || line[$components][0] === lineArr[i - 1][$components][1]), "lines does not match up");
         super($secret, ...lineArr);
-        // NOTE positions are not available right now
     }
 
     get coordinates() {

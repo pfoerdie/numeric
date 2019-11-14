@@ -1,6 +1,27 @@
 const _ = require("./tools.js");
 const Vector = require("./Vector.js");
-const $secret = Symbol(), $class = Symbol(), $components = Symbol();
+const $secret = Symbol(), $class = Symbol(), $components = Symbol(), $ = $components;
+
+const calc = {
+    Point: {
+        equals: {
+            Point(a, b) {
+                return Vector.equality(a[$][0], b[$][0]);
+            },
+            MultiPoint(a, b) {
+                return a[$].every(aPoint => calc.Point.equals.Point(aPoint, b));
+            }
+        },
+        contains: {
+            Point(a, b) {
+                return calc.Point.equals.Point(a, b);
+            },
+            MultiPoint(a, b) {
+                return calc.Point.equals.MultiPoint(a, b);
+            }
+        }
+    }
+};
 
 class Geometry {
 
@@ -14,7 +35,7 @@ class Geometry {
     constructor(secret, ...components) {
         _.assert(new.target !== Geometry, "class is abstract");
         _.assert(secret === $secret, "constructor function is private");
-        _.assert(components.every(val => val instanceof Geometry || val instanceof Position), "not all geometries or positions");
+        _.assert(components.every(val => val instanceof Geometry || val instanceof Vector), "not all geometries or vectors");
         _.define(this, $class, new.target);
         _.define(this, $components, components);
     }
@@ -176,47 +197,49 @@ class GeometryCollection extends Geometry {
     }
 
     equals(that) {
-        _.assert(false, "not implemented yet"); // TODO implement
         _.assert(that instanceof Geometry, "not a geometry");
         switch (that.type) {
             case "Point":
             default:
+                _.assert(false, "not implemented yet"); // TODO implement
         }
     }
 
     contains(that) {
-        _.assert(false, "not implemented yet"); // TODO implement
         _.assert(that instanceof Geometry, "not a geometry");
         switch (that.type) {
             case "Point":
             default:
+                _.assert(false, "not implemented yet"); // TODO implement
         }
     }
 
     overlaps(that) {
-        _.assert(false, "not implemented yet"); // TODO implement
+        _.assert(false, "disabled"); // TODO enable
         _.assert(that instanceof Geometry, "not a geometry");
         switch (that.type) {
             case "Point":
             default:
+                _.assert(false, "not implemented yet"); // TODO implement
         }
     }
 
     intersects(that) {
-        _.assert(false, "not implemented yet"); // TODO implement
         _.assert(that instanceof Geometry, "not a geometry");
         switch (that.type) {
             case "Point":
             default:
+                _.assert(false, "not implemented yet"); // TODO implement
         }
     }
 
     touches(that) {
-        _.assert(false, "not implemented yet"); // TODO implement
+        _.assert(false, "disabled"); // TODO enable
         _.assert(that instanceof Geometry, "not a geometry");
         switch (that.type) {
             case "Point":
             default:
+                _.assert(false, "not implemented yet"); // TODO implement
         }
     }
 
@@ -287,8 +310,11 @@ class Point extends Geometry {
         switch (that.type) {
             case "Point": // points equal, if there positions equal
                 return this[$components][0].equals(that[$components][0]);
-            default: // else use symmetry of equals
-                return that.equals(this);
+            case "MultiPoint": // equals multiple points, if it equals them all
+            case "GeometryCollection":
+                return that[$components].every(thatC => this.equals(thatC));
+            default: // points are not equal to anything else
+                return false;
         }
     }
 
@@ -297,12 +323,16 @@ class Point extends Geometry {
         switch (that.type) {
             case "Point": // points only contain, if they are equal
                 return this.equals(that);
-            default: // points have no dimensionality, so they have to be equal to contain
-                return that.equals(this);
+            case "MultiPoint": // contains multiple points, if it contains them all
+            case "GeometryCollection":
+                return that[$components].every(thatC => this.contains(thatC));
+            default: // points have no dimensionality, so they cannot contains anything else
+                return false;
         }
     }
 
     overlaps(that) {
+        _.assert(false, "disabled"); // TODO enable
         _.assert(that instanceof Geometry, "not a geometry");
         switch (that.type) {
             case "Point": // points only overlap, if they are equal
@@ -318,14 +348,16 @@ class Point extends Geometry {
             case "Point": // points only intersect, if they are equal
                 return this.equals(that);
             default: // else use symmetry of intersects
-                return that.overlaps(this);
+                return that.intersects(this);
         }
     }
 
     touches(that) {
+        _.assert(false, "disabled"); // TODO enable
         _.assert(that instanceof Geometry, "not a geometry");
         switch (that.type) {
             case "Point": // points can not touch each other, because they immediatly overlap
+            case "MultiPoint":
                 return false;
             default: // else use symmetry of touches
                 return that.touches(this);
@@ -373,8 +405,10 @@ class MultiPoint extends Geometry {
                 return this[$components].every(thisP => thisP.equals(that));
             case "MultiPoint": // equals if they both contain each other
                 return this.contains(that) && that.contains(this);
-            default: // else use symmetry of equals
-                return that.equals(this);
+            case "GeometryCollection": // TODO implement
+                _.assert(false, "not implemented yet");
+            default: // anything else is not equal to this
+                return false;
         }
     }
 
@@ -385,17 +419,20 @@ class MultiPoint extends Geometry {
                 return this[$components].some(thisP => thisP.equals(that));
             case "MultiPoint": // contains multiple points, if it contains them all
                 return that[$components].every(thatP => this.contains(thatP));
-            default: // points have no dimensionality, so they have to be equal to contain
-                return that.equals(this);
+            case "GeometryCollection": // TODO implement
+                _.assert(false, "not implemented yet");
+            default: // points have no dimensionality, so they cannot contain lines etc
+                return false;
         }
     }
 
     overlaps(that) {
+        _.assert(false, "disabled"); // TODO enable
         _.assert(that instanceof Geometry, "not a geometry");
         switch (that.type) {
             case "Point": // points only overlap, if they are contained
                 return this.contains(that);
-            case "MultiPoint": // because points do not touc heach other, they overlap if they intersect
+            case "MultiPoint": // because points do not touch each other, they overlap if they intersect
                 return this.intersects(that);
             default: // else use symmetry of overlaps
                 return that.overlaps(this);
@@ -415,6 +452,7 @@ class MultiPoint extends Geometry {
     }
 
     touches(that) {
+        _.assert(false, "disabled"); // TODO enable
         _.assert(that instanceof Geometry, "not a geometry");
         switch (that.type) {
             case "Point": // points do not touch other points
@@ -427,7 +465,7 @@ class MultiPoint extends Geometry {
 
 } // MultiPoint
 
-class Line extends Geometry {
+class Line extends Vector {
 
     /**
      * @param {Position} start 
@@ -437,13 +475,24 @@ class Line extends Geometry {
      */
     constructor(start, end) {
         _.assert(start instanceof Position && end instanceof Position, "not all positions");
+        _.assert(start.length === end.length, "different length positions");
         _.assert(!start.equals(end), "line is too short");
-        super($secret, start, end);
+        super(start.length);
+        start.forEach((val, i) => { this[i] = end[i] - start[i]; });
+        _.define(this, $components, [start, end]);
     }
 
     /** @throws {Error} */
     static from() {
         _.assert(false, "not available here");
+    }
+
+    equals(that) {
+        _.assert(that instanceof Line, "only for lines");
+        let [a0, a1] = this[$components], [b0, b1] = that[$components];
+        return (this === that)
+            || (Vector.equality(a0, b0) && Vector.equality(a1, b1))
+            || (Vector.equality(a0, b1) && Vector.equality(a1, b0));
     }
 
     contains(that) {
@@ -453,34 +502,50 @@ class Line extends Geometry {
         _.assert(that instanceof Position, "onyl for positions");
 
         let
-            thisStart = this[$components][0],
-            thisEnd = this[$components][1],
-            thisDir = Vector.sum(thisEnd, Vector.negative(thisStart)),
-            thatDir = Vector.sum(that, Vector.negative(thisStart)),
-            factors = Vector.hadProd(thatDir, Vector.inverse(thisDir));
+            as = this[$components][0],
+            av = this,
+            bv = Vector.sum(that, Vector.negative(as)),
+            p = Vector.hadProd(bv, Vector.inverse(av));
 
-        factors = factors.map((val, i) => (val < Infinity && val > - Infinity) ? val :
-            Math.abs(thisDir[i]) < Number.EPSILON && Math.abs(thatDir[i]) < Number.EPSILON);
+        if (p.some((val, i) =>
+            (val === -Infinity || val === Infinity) &&
+            (Math.abs(av[i]) >= Number.EPSILON || Math.abs(bv[i]) >= Number.EPSILON)
+        )) return false;
 
-        if (factors.some(val => val === false)) return false;
-        factors = factors.filter(val => val !== true);
+        p = p.filter(val => val > - Infinity && val < Infinity);
+        let avg = p.reduce(
+            (acc, val, i) => (i * acc + val) / (i + 1)
+        );
 
-        let average = factors.reduce((acc, val, i) => (i * acc + val) / (i + 1));
-        return average + Number.EPSILON >= 0 && average - Number.EPSILON <= 1 &&
-            factory.every(val => Math.abs(val - average) < Number.EPSILON);
+        return avg + Number.EPSILON >= 0 && avg - Number.EPSILON <= 1
+            && p.every(val => Math.abs(val - avg) < Number.EPSILON);
+
+        // NOTE is this infinity-part necessary?
     }
 
     intersects(that) {
         _.assert(that instanceof Line, "only for lines");
-        let
-            thisStart = this[$components][0],
-            thisEnd = this[$components][1],
-            thisDir = Vector.add(thisEnd, Vector.negative(thisStart)),
-            thatStart = that[$components][0],
-            thatEnd = that[$components][1],
-            thatDir = Vector.add(thatEnd, Vector.negative(thatStart));
 
-        _.assert(false, "not implemented jet"); // TODO
+        let
+            as = this[$components][0],
+            av = this,
+            bs = that[$components][0],
+            bv = that;
+
+        let q = ((bs[0] - as[0]) - (bs[1] - as[1]) * (av[0] / av[1])) / ((bv[1]) * (av[0] / av[1]) - (bv[0]));
+        if (q === -Infinity || q === Infinity) {
+            q = ((bs[1] - as[1]) - (bs[0] - as[0]) * (av[1] / av[0])) / ((bv[0]) * (av[1] / av[0]) - (bv[1]));
+        }
+
+        let p = ((bs[0] - as[0]) + q * bv[0]) / (av[0]);
+        if (p === -Infinity || p === Infinity) {
+            p = ((bs[1] - as[1]) + q * bv[1]) / (av[1]);
+        }
+
+        return p + Number.EPSILON >= 0 && p - Number.EPSILON <= 1 && q + Number.EPSILON >= 0 && q - Number.EPSILON <= 1;
+
+        // TODO deviding by zero might become a problem!!
+        // NOTE the third component of the position is never used
     }
 
 } // Line
@@ -521,12 +586,20 @@ class LineString extends Geometry {
     }
 
     equals(that) {
-        _.assert(false, "not implemented yet"); // TODO implement
         _.assert(that instanceof Geometry, "not a geometry");
         if (this === that) return true;
         switch (that.type) {
-            case "Point":
-            default:
+            case "LineString": // linestring equal if all their lines equal in order or reverse order
+                let len = this[$components].length;
+                if (that[$components].length !== len) return false;
+                return this[$components].every((thisL, i) => thisL.equals(that[$components][i]))
+                    || this[$components].every((thisL, i) => thisL.equals(that[$components][len - 1 - i]));
+            // REM linestring can also be equal, if the corners are shifted but stay on the line, currently returns false
+            case "MultiLineString":
+            case "GeometryCollection": // use symmetry for multilinestring and collections
+                return that.equals(this);
+            default: // nothing else is equal
+                return false;
         }
     }
 
@@ -534,40 +607,61 @@ class LineString extends Geometry {
         _.assert(that instanceof Geometry, "not a geometry");
         switch (that.type) {
             case "Point": // contains a point, if some line contains its position
-                return this[$components].some(thisL => thisL.contains(that[$components][0]));
+                let thatP = that[$components][0];
+                return this[$components].some(thisL => thisL.contains(thatP));
             case "MultiPoint": // contains multiple points, if all of them are contained
                 return that[$components].every(thatP => this.contains(thatP));
             case "LineString":
-            case "MultiLineString":
+                return that[$components].every(thatL => this[$components].some(thisL => thisL.contains(thatL)));
+            // REM linestrings can also contain, if the corners are shifted but stay on line, currently returns false.
+            case "MultiLineString": // multilinestrings are contained, if this contains every part of it (same with collections)
+            case "GeometryCollection":
+                return that[$components].every(thatC => this.contains(thatC));
+            default: // everything else is not contained
+                return false;
+        }
+    }
+
+    overlaps(that) {
+        _.assert(false, "disabled"); // TODO enable
+        _.assert(that instanceof Geometry, "not a geometry");
+        switch (that.type) {
+            case "Point":
             default:
                 _.assert(false, "not implemented yet"); // TODO implement
         }
     }
 
-    overlaps(that) {
-        _.assert(false, "not implemented yet"); // TODO implement
-        _.assert(that instanceof Geometry, "not a geometry");
-        switch (that.type) {
-            case "Point":
-            default:
-        }
-    }
-
     intersects(that) {
-        _.assert(false, "not implemented yet"); // TODO implement
         _.assert(that instanceof Geometry, "not a geometry");
         switch (that.type) {
-            case "Point":
-            default:
+            case "Point": // points only intersect, if they are contained
+                return this.contains(that);
+            case "MultiPoint": // multi points intersect, if some of them are contained
+                return that[$components].some(thatPt => this.contains(thatPt));
+            case "LineString": // linestrings intersect, if some of each lines intersects
+                return this[$components].some(thisL => that[$components].some(thatL => thisL.intersects(thatL)));
+            default: // else use symmetry of intersects
+                return that.intersects(this);
         }
     }
 
     touches(that) {
-        _.assert(false, "not implemented yet"); // TODO implement
+        _.assert(false, "disabled"); // TODO enable
         _.assert(that instanceof Geometry, "not a geometry");
         switch (that.type) {
             case "Point":
-            default:
+                let len = this[$components].length;
+                return this[$components][0].equals(that[$components][0])
+                    || this[$components][len - 1].equals(that[$components][0]);
+            case "MultiPoint":
+                return that[$components].every(thatP => this.touches(thatP));
+            case "LineString": // TODO implement
+            case "MultiLineString": // TODO implement
+            case "GeometryCollection": // TODO implement
+                _.assert(false, "not implemented yet");
+            default: // else use symmetry of touches
+                return that.touches(this);
         }
     }
 
@@ -604,12 +698,18 @@ class MultiLineString extends Geometry {
     }
 
     equals(that) {
-        _.assert(false, "not implemented yet"); // TODO implement
         _.assert(that instanceof Geometry, "not a geometry");
         if (this === that) return true;
         switch (that.type) {
-            case "Point":
-            default:
+            case "LineString": // equals linestrings, if everyline equals
+                return this[$components].every(thisLS => thisLS.equals(that));
+            // REM can also equal, if its distributed over the multilinestring, currently returns false
+            case "MultiLineString":
+                return this.contains(that) && that.contains(this);
+            case "GeometryCollection": // use symmetry for collections
+                return that.equals(this);
+            default: // nothing else is equal
+                return false;
         }
     }
 
@@ -620,37 +720,52 @@ class MultiLineString extends Geometry {
                 return this[$components].some(thisLS => thisLS.contains(that));
             case "MultiPoint": // contains multiple points, if all of them are contained
                 return that[$components].every(thatP => this.contains(thatP));
-            case "LineString":
-            case "MultiLineString":
+            case "LineString": // linestrings are contained, if its lines are all contained by one of this linestrings
+                return that[$components].every(thatL => this[$components].some(thisLS => thisLS[$components].some(thisL => thisL.intersects(thatL))));
+            case "MultiLineString": // multilinestrings are contained, if all its parts art contained
+                return that[$components].every(thatLS => this.contains(thatLS));
+            case "GeometryCollections":
+                _.assert(false, "not implemented yet"); // TODO implement
+            default: // nothing else can be contained
+                return false;
+        }
+    }
+
+    overlaps(that) {
+        _.assert(false, "disabled"); // TODO enable
+        _.assert(that instanceof Geometry, "not a geometry");
+        switch (that.type) {
+            case "Point":
             default:
                 _.assert(false, "not implemented yet"); // TODO implement
         }
     }
 
-    overlaps(that) {
-        _.assert(false, "not implemented yet"); // TODO implement
-        _.assert(that instanceof Geometry, "not a geometry");
-        switch (that.type) {
-            case "Point":
-            default:
-        }
-    }
-
     intersects(that) {
-        _.assert(false, "not implemented yet"); // TODO implement
         _.assert(that instanceof Geometry, "not a geometry");
         switch (that.type) {
-            case "Point":
-            default:
+            case "Point": // points only intersect, if they are contained
+                return this.contains(that);
+            case "MultiPoint": // multi points intersect, if some of them are contained
+                return that[$components].some(thatPt => this.contains(thatPt));
+            case "LineString": // linestrings intersect, if they intersects some of this parts
+                return this[$components].some(thisLS => thisLS.intersects(that));
+            case "MultiLineString":
+                return this[$components].some(thisLS => that[$components].some(thatLS => thisLS.intersects(thatLS)));
+            case "GeometryCollection": // use symmetry of intersects
+                return that.intersects(this);
+            default: // else use symmetry of intersects
+                return that.intersects(this);
         }
     }
 
     touches(that) {
-        _.assert(false, "not implemented yet"); // TODO implement
+        _.assert(false, "disabled"); // TODO enable
         _.assert(that instanceof Geometry, "not a geometry");
         switch (that.type) {
             case "Point":
             default:
+                _.assert(false, "not implemented yet"); // TODO implement
         }
     }
 
@@ -715,48 +830,53 @@ class Polygon extends Geometry {
     }
 
     equals(that) {
-        _.assert(false, "not implemented yet"); // TODO implement
         _.assert(that instanceof Geometry, "not a geometry");
         if (this === that) return true;
         switch (that.type) {
-            case "Point":
+            case "Polygon":
+            case "MultiPolygon":
+            case "GeometryCollection":
+                _.assert(false, "not implemented yet"); // TODO implement
             default:
+                return false;
         }
     }
 
     contains(that) {
-        _.assert(false, "not implemented yet"); // TODO implement
         _.assert(that instanceof Geometry, "not a geometry");
         switch (that.type) {
             case "Point":
             default:
+                _.assert(false, "not implemented yet"); // TODO implement
         }
     }
 
     overlaps(that) {
-        _.assert(false, "not implemented yet"); // TODO implement
+        _.assert(false, "disabled"); // TODO enable
         _.assert(that instanceof Geometry, "not a geometry");
         switch (that.type) {
             case "Point":
             default:
+                _.assert(false, "not implemented yet"); // TODO implement
         }
     }
 
     intersects(that) {
-        _.assert(false, "not implemented yet"); // TODO implement
         _.assert(that instanceof Geometry, "not a geometry");
         switch (that.type) {
             case "Point":
             default:
+                _.assert(false, "not implemented yet"); // TODO implement
         }
     }
 
     touches(that) {
-        _.assert(false, "not implemented yet"); // TODO implement
+        _.assert(false, "disabled"); // TODO enable
         _.assert(that instanceof Geometry, "not a geometry");
         switch (that.type) {
             case "Point":
             default:
+                _.assert(false, "not implemented yet"); // TODO implement
         }
     }
 
@@ -770,7 +890,7 @@ class MultiPolygon extends Geometry {
      */
     constructor(...polyArr) {
         _.assert(polyArr.every(poly => poly instanceof Polygon), "not all polygons");
-        super($secret, ...pointArr);
+        super($secret, ...polyArr);
     }
 
     /** 
@@ -793,48 +913,50 @@ class MultiPolygon extends Geometry {
     }
 
     equals(that) {
-        _.assert(false, "not implemented yet"); // TODO implement
         _.assert(that instanceof Geometry, "not a geometry");
         if (this === that) return true;
         switch (that.type) {
             case "Point":
             default:
+                _.assert(false, "not implemented yet"); // TODO implement
         }
     }
 
     contains(that) {
-        _.assert(false, "not implemented yet"); // TODO implement
         _.assert(that instanceof Geometry, "not a geometry");
         switch (that.type) {
             case "Point":
             default:
+                _.assert(false, "not implemented yet"); // TODO implement
         }
     }
 
     overlaps(that) {
-        _.assert(false, "not implemented yet"); // TODO implement
+        _.assert(false, "disabled"); // TODO enable
         _.assert(that instanceof Geometry, "not a geometry");
         switch (that.type) {
             case "Point":
             default:
+                _.assert(false, "not implemented yet"); // TODO implement
         }
     }
 
     intersects(that) {
-        _.assert(false, "not implemented yet"); // TODO implement
         _.assert(that instanceof Geometry, "not a geometry");
         switch (that.type) {
             case "Point":
             default:
+                _.assert(false, "not implemented yet"); // TODO implement
         }
     }
 
     touches(that) {
-        _.assert(false, "not implemented yet"); // TODO implement
+        _.assert(false, "disabled"); // TODO enable
         _.assert(that instanceof Geometry, "not a geometry");
         switch (that.type) {
             case "Point":
             default:
+                _.assert(false, "not implemented yet"); // TODO implement
         }
     }
 

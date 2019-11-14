@@ -6,10 +6,26 @@ const calc = {
     Point: {
         equals: {
             Point(a, b) {
-                return Vector.equality(a[$][0], b[$][0]);
+                return a === b || Vector.equality(a[$][0], b[$][0]);
             },
             MultiPoint(a, b) {
-                return a[$].every(aPoint => calc.Point.equals.Point(aPoint, b));
+                return calc.MultiPoint.equals.Point(b, a);
+            },
+            LineString(a, b) {
+                return false;
+            },
+            MultiLineString(a, b) {
+                return false;
+            },
+            Polygon(a, b) {
+                return false;
+            },
+            MultiPolygon(a, b) {
+                return false;
+            },
+            GeometryCollection(a, b) {
+                throw new Error("not implemented");
+                // TODO
             }
         },
         contains: {
@@ -18,6 +34,577 @@ const calc = {
             },
             MultiPoint(a, b) {
                 return calc.Point.equals.MultiPoint(a, b);
+            },
+            LineString(a, b) {
+                return false;
+            },
+            MultiLineString(a, b) {
+                return false;
+            },
+            Polygon(a, b) {
+                return false;
+            },
+            MultiPolygon(a, b) {
+                return false;
+            },
+            GeometryCollection(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            }
+        },
+        intersects: {
+            Point(a, b) {
+                return calc.Point.equals.Point(a, b);
+            },
+            MultiPoint(a, b) {
+                return calc.Point.equals.MultiPoint(a, b);
+            },
+            LineString(a, b) {
+                return calc.LineString.intersects.Point(b, a);
+            },
+            MultiLineString(a, b) {
+                return calc.MultiLineString.intersects.Point(b, a);
+            },
+            Polygon(a, b) {
+                return calc.Polygon.intersects.Point(b, a);
+            },
+            MultiPolygon(a, b) {
+                return calc.MultiPolygon.intersects.Point(b, a);
+            },
+            GeometryCollection(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            }
+        }
+    },
+    MultiPoint: {
+        equals: {
+            Point(a, b) {
+                return a[$].every(aP => calc.Point.equals.Point(aP, b));
+            },
+            MultiPoint(a, b) {
+                return a === b || (MultiPoint.contains.MultiPoint(a, b) && MultiPoint.contains.MultiPoint(b, a));
+            },
+            LineString(a, b) {
+                return false;
+            },
+            MultiLineString(a, b) {
+                return false;
+            },
+            Polygon(a, b) {
+                return false;
+            },
+            MultiPolygon(a, b) {
+                return false;
+            },
+            GeometryCollection(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            }
+        },
+        contains: {
+            Point(a, b) {
+                return a[$].some(aP => calc.Point.equals.Point(aP, b));
+            },
+            MultiPoint(a, b) {
+                return b[$].every(bP => calc.MultiPoint.contains.Point(a, bP));
+            },
+            LineString(a, b) {
+                return false;
+            },
+            MultiLineString(a, b) {
+                return false;
+            },
+            Polygon(a, b) {
+                return false;
+            },
+            MultiPolygon(a, b) {
+                return false;
+            },
+            GeometryCollection(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            }
+        },
+        intersects: {
+            Point(a, b) {
+                return calc.MultiPoint.contains.Point(a, b);
+            },
+            MultiPoint(a, b) {
+                return b[$].some(bP => calc.MultiPoint.contains.Point(a, bP));
+            },
+            LineString(a, b) {
+                return a[$].some(aP => calc.LineString.contains.Point(b, aP));
+            },
+            MultiLineString(a, b) {
+                return a[$].some(aP => calc.MultiLineString.contains.Point(b, aP));
+            },
+            Polygon(a, b) {
+                return a[$].some(aP => calc.Polygon.contains.Point(b, aP));
+            },
+            MultiPolygon(a, b) {
+                return a[$].some(aP => calc.MultiPolygon.contains.Point(b, aP));
+            },
+            GeometryCollection(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            }
+        }
+    },
+    LineString: {
+        equals: {
+            Point(a, b) {
+                return false;
+            },
+            MultiPoint(a, b) {
+                return false;
+            },
+            LineString(a, b) {
+                return a === b || (a[$].length === b[$].length && (
+                    a[$].every((aL, i) => al[$][0])
+                ));
+            },
+            MultiLineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            Polygon(a, b) {
+                return false;
+            },
+            MultiPolygon(a, b) {
+                return false;
+            },
+            GeometryCollection(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            }
+        },
+        contains: {
+            Point(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPoint(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            LineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiLineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            Polygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPolygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            GeometryCollection(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            }
+        },
+        intersects: {
+            Point(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPoint(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            LineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiLineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            Polygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPolygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            GeometryCollection(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            }
+        }
+    },
+    MultiLineString: {
+        equals: {
+            Point(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPoint(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            LineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiLineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            Polygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPolygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            GeometryCollection(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            }
+        },
+        contains: {
+            Point(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPoint(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            LineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiLineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            Polygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPolygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            GeometryCollection(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            }
+        },
+        intersects: {
+            Point(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPoint(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            LineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiLineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            Polygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPolygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            GeometryCollection(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            }
+        }
+    },
+    Polygon: {
+        equals: {
+            Point(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPoint(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            LineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiLineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            Polygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPolygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            GeometryCollection(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            }
+        },
+        contains: {
+            Point(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPoint(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            LineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiLineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            Polygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPolygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            GeometryCollection(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            }
+        },
+        intersects: {
+            Point(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPoint(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            LineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiLineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            Polygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPolygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            GeometryCollection(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            }
+        }
+    },
+    MultiPolygon: {
+        equals: {
+            Point(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPoint(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            LineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiLineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            Polygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPolygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            GeometryCollection(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            }
+        },
+        contains: {
+            Point(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPoint(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            LineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiLineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            Polygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPolygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            GeometryCollection(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            }
+        },
+        intersects: {
+            Point(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPoint(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            LineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiLineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            Polygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPolygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            GeometryCollection(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            }
+        }
+    },
+    GeometryCollection: {
+        equals: {
+            Point(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPoint(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            LineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiLineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            Polygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPolygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            GeometryCollection(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            }
+        },
+        contains: {
+            Point(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPoint(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            LineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiLineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            Polygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPolygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            GeometryCollection(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            }
+        },
+        intersects: {
+            Point(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPoint(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            LineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiLineString(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            Polygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            MultiPolygon(a, b) {
+                throw new Error("not implemented");
+                // TODO
+            },
+            GeometryCollection(a, b) {
+                throw new Error("not implemented");
+                // TODO
             }
         }
     }
@@ -97,6 +684,12 @@ class Geometry {
      */
     equals(that) {
         _.assert(false, "not available here");
+        _.assert(that instanceof Geometry, "not a geometry");
+        try {
+            return calc[this.type].equals[that.type](this, that);
+        } catch (err) {
+            throw new Error("not available");
+        }
     }
 
     /**

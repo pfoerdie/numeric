@@ -205,12 +205,17 @@ _contains = {
     Line: {
         Position(aL, bP) {
             let aP_s = aL[$][0], aP_e = aL[$][1];
-            let bv = new Vec2(bP[1] - aP_s[1], aP_s[0] - bP[0]), cv = new Vec2(bP[1] - aP_e[1], aP_e[0] - bP[0]);
-            // 1. is bP in range to the start of aL?
-            // 2. is bP in range to the end of aL?
-            // 3. does the vector of aL and the vector from the start of aL to bP point in the same direction?
-            return Vec2.euclNorm(bv) <= Vec2.euclNorm(aL) &&
-                Vec2.euclNorm(cv) <= Vec2.euclNorm(aL) &&
+            let bv = Vec2.sum(aP_s, Vec2.negative(bP)); bv[1] *= -1;
+            let maxRadius = Vec2.euclNorm(aL);
+            /**
+             * 1. is bP in range to the start of aL?
+             * 2. is bP in range to the end of aL? 
+             *    this check is nessesary, because the next step would also return true if bP is behind aL
+             * 3. does the vector of aL and the vector from the start of aL to bP point in the same direction?
+             *    notice that bv is rotated 90deg above, so the dot product would result in 0, if it is 90deg with aL too
+             */
+            return Vec2.euclNorm(bv) <= maxRadius &&
+                Vec2.euclNorm(Vec2.sum(aP_e, Vec2.negative(bP))) <= maxRadius &&
                 Vec2.dotProd(bv, aL) == 0; // NOTE do not use === here
         }
     },
@@ -408,7 +413,16 @@ _contains = {
 
 _intersects = {
     Line: {
-        Line(aL, bP) {
+        Line(aL, bL) {
+            let maxRadius = Math.max(Vec2.euclNorm(aL), Vec2.euclNorm(bL));
+            let aL_s = aL[$][0], aL_e = aL[$][1], bL_s = bL[$][0], bL_e = bL[$][1];
+            let minDist = Math.min(
+                Vec2.euclNorm(Vec2.sum(aL_s, Vec2.negative(bL_s))),
+                Vec2.euclNorm(Vec2.sum(aL_s, Vec2.negative(bL_e))),
+                Vec2.euclNorm(Vec2.sum(aL_e, Vec2.negative(bL_s))),
+                Vec2.euclNorm(Vec2.sum(aL_e, Vec2.negative(bL_e)))
+            );
+            if (minDist > maxRadius) return false;
             _.assert(false, "currently not supported");
             // TODO implement
         }

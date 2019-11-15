@@ -19,10 +19,10 @@ let
         [1, 0]
     ]);
 
-console.log(Pt1.intersects(LS1));
-console.log(LS2.contains(Pt1));
-console.log(LS3.contains(Pt1));
+// console.log(Pt1.intersects(LS1));
+// console.log(LS2.contains(Pt1));
+// console.log(LS3.contains(Pt1));
 
-// console.log(l1.intersects(l2));
-// console.log(l1.intersects(l3));
-// console.log(l1.intersects(LineString.from([[0, 1], [3, 4]])));
+// console.log(LS1.intersects(LS2));
+// console.log(LS1.intersects(LS3));
+console.log(LS2.intersects(LineString.from([[10, 0], [10, 5]])));

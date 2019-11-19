@@ -2,8 +2,7 @@ const
     _ = require("./tools.js"),
     Vector = require("./Vector.js"),
     $secret = Symbol(), // to unlock hidden constructor
-    $target = Symbol(), // target of a construction
-    $ = Symbol(); // components of a geometry
+    $ = Symbol("$"); // components of a geometry
 
 let _equals, _contains, _intersects, _overlaps, _touches; // comparison methods
 

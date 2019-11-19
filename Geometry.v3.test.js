@@ -5,6 +5,7 @@ const { Point, LineString, Polygon, MultiPolygon, GeometryCollection } = Geometr
 
 let
     Pt1 = Point.from([.5, .5]),
+    Pt2 = Point.from([.5, .5, 3.5, -2]),
     dePg = Geometry.from(geoDataDE.features[0].geometry),
     LS1 = LineString.from([
         [0, 0],
@@ -15,15 +16,15 @@ let
         [2, 2]
     ]),
     LS3 = LineString.from([
-        [0, 1, 5],
-        [1, 0, 2]
+        [0, 1, 5, 13],
+        [1, 0, 2, -16]
     ]);
 
 console.log(JSON.stringify(LS3.coordinates));
 
 console.log(Pt1.intersects(LS1));
 console.log(LS2.contains(Pt1));
-// console.log(LS3.contains(Pt1));
+// console.log(LS3.contains(Pt2));
 
 // console.log(LS1.intersects(LS2));
 // console.log(LS1.intersects(LS3));

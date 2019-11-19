@@ -1118,8 +1118,7 @@ class Geometry {
         _.assert(new.target !== Geometry, "class is abstract");
         _.assert(secret === $secret, "constructor function is private");
         _.assert(components.every(val => val instanceof Geometry || val instanceof Position || val instanceof Line), "not all geometries, positions or lines");
-        _.define(this, $target, new.target);
-        _.define(this, $, components);
+
         if (components.length > 0) {
             let dims = components.map(val => val instanceof Geometry ? val.dimension : val.length);
             _.assert(dims.every((val, i) => !i || val === dims[0]));
@@ -1127,11 +1126,13 @@ class Geometry {
         } else {
             _.define(this, "dimension", 0);
         }
+
+        _.define(this, $, components);
     }
 
     /** @type {GeoJSON~Geometry#type} */
     get type() {
-        return this[$target].name;
+        return "Geometry";
     }
 
     /** @throws {Error} */
@@ -1277,47 +1278,6 @@ class Geometry {
 
 } // Geometry
 
-class GeometryCollection extends Geometry {
-
-    /**
-     * @param  {...(Point|MultiPoint|LineString|MultiLineString|Polygon|MultiPolygon)} geomArr 
-     * @constructs GeometryCollection
-     */
-    constructor(...geomArr) {
-        let valid = [Point, MultiPoint, LineString, MultiLineString, Polygon, MultiPolygon];
-        _.assert(geomArr.every(comp => valid.some(clss => comp instanceof clss)), "not all valid geometries");
-        super($secret, ...geomArr);
-    }
-
-    /** 
-     * The value of "geometries" is an array. Each element of this array is a GeoJSON Geometry object.
-     * @type {GeoJSON~GeometryCollection#geometries}
-     */
-    get geometries() {
-        let collection = this[$].map(geom => geom.toJSON());
-        return collection;
-    }
-
-    /** @returns {GeoJSON~GeometryCollection} */
-    toJSON() {
-        return {
-            "type": this.type,
-            "geometries": this.geometries
-        };
-    }
-
-    /**
-     * @param {GeoJSON~GeometryCollection#geometries} geoms 
-     * @returns {GeometryCollection}
-     */
-    static from(geoms) {
-        _.assert(_.is.array(geoms) && geoms.length > 0, "not an array");
-        let geomArr = geoms.map(Geometry.from);
-        return new GeometryCollection(...geomArr);
-    }
-
-} // GeometryCollection
-
 class Point extends Geometry {
 
     /**
@@ -1327,6 +1287,10 @@ class Point extends Geometry {
     constructor(pos) {
         _.assert(pos instanceof Position, "not a position");
         super($secret, pos);
+    }
+
+    get type() {
+        return "Point";
     }
 
     /** 
@@ -1358,6 +1322,10 @@ class MultiPoint extends Geometry {
         _.assert(pointArr.every(point => point instanceof Point), "not all points");
         _.assert(pointArr.length > 0, "too few points");
         super($secret, ...pointArr);
+    }
+
+    get type() {
+        return "MultiPoint";
     }
 
     /** 
@@ -1392,6 +1360,10 @@ class LineString extends Geometry {
         _.assert(lineArr.length > 0, "too few lines");
         _.assert(lineArr.every((line, i) => i === 0 || line[$][0] === lineArr[i - 1][$][1]), "lines does not match up");
         super($secret, ...lineArr);
+    }
+
+    get type() {
+        return "LineString";
     }
 
     /** 
@@ -1430,6 +1402,10 @@ class MultiLineString extends Geometry {
         super($secret, ...lineStrArr);
     }
 
+    get type() {
+        return "MultiLineString";
+    }
+
     /** 
      * For type "MultiLineString", the "coordinates" member is an array of LineString coordinate arrays.
      * @type {GeoJSON~MultiLineString#coordinates} 
@@ -1464,6 +1440,10 @@ class LinearRing extends LineString {
         _.assert(lineArr[0][$][0] === lineArr[lineArr.length - 1][$][1], "the end does not match the beginning");
     }
 
+    get type() {
+        return "LineString";
+    }
+
     /**
      * @param {GeoJSON~LinearRing#coordinates} coords 
      * @returns {LinearRing}
@@ -1489,6 +1469,10 @@ class Polygon extends Geometry {
         _.assert(ringArr.every(ring => ring instanceof LinearRing), "not all linearrings");
         _.assert(ringArr.length > 0, "too few linearrings");
         super($secret, ...ringArr);
+    }
+
+    get type() {
+        return "Polygon";
     }
 
     /** 
@@ -1524,6 +1508,10 @@ class MultiPolygon extends Geometry {
         super($secret, ...polyArr);
     }
 
+    get type() {
+        return "MultiPolygon";
+    }
+
     /** 
      * For type "MultiPolygon", the "coordinates" member is an array of Polygon coordinate arrays.
      * @type {GeoJSON~MultiPolygon#coordinates} 
@@ -1544,6 +1532,50 @@ class MultiPolygon extends Geometry {
     }
 
 } // MultiPolygon
+
+class GeometryCollection extends Geometry {
+
+    /**
+     * @param  {...(Geometry)} geomArr 
+     * @constructs GeometryCollection
+     */
+    constructor(...geomArr) {
+        _.assert(geomArr.every(comp => comp instanceof Geometry && !(comp instanceof GeometryCollection)), "not all geometries");
+        super($secret, ...geomArr);
+    }
+
+    get type() {
+        return "GeometryCollection";
+    }
+
+    /** 
+     * The value of "geometries" is an array. Each element of this array is a GeoJSON Geometry object.
+     * @type {GeoJSON~GeometryCollection#geometries}
+     */
+    get geometries() {
+        let collection = this[$].map(geom => geom.toJSON());
+        return collection;
+    }
+
+    /** @returns {GeoJSON~GeometryCollection} */
+    toJSON() {
+        return {
+            "type": this.type,
+            "geometries": this.geometries
+        };
+    }
+
+    /**
+     * @param {GeoJSON~GeometryCollection#geometries} geoms 
+     * @returns {GeometryCollection}
+     */
+    static from(geoms) {
+        _.assert(_.is.array(geoms) && geoms.length > 0, "not an array");
+        let geomArr = geoms.map(Geometry.from);
+        return new GeometryCollection(...geomArr);
+    }
+
+} // GeometryCollection
 
 //#endregion
 

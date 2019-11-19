@@ -15,12 +15,14 @@ let
         [2, 2]
     ]),
     LS3 = LineString.from([
-        [0, 1],
-        [1, 0]
+        [0, 1, 5],
+        [1, 0, 2]
     ]);
 
-// console.log(Pt1.intersects(LS1));
-// console.log(LS2.contains(Pt1));
+console.log(JSON.stringify(LS3.coordinates));
+
+console.log(Pt1.intersects(LS1));
+console.log(LS2.contains(Pt1));
 // console.log(LS3.contains(Pt1));
 
 // console.log(LS1.intersects(LS2));

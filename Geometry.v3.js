@@ -1,6 +1,6 @@
 const
     _ = require("./tools.js"),
-    { Vec2 } = require("./Vector.js"),
+    Vector = require("./Vector.js"),
     $secret = Symbol(), // to unlock hidden constructor
     $target = Symbol(), // target of a construction
     $ = Symbol(); // components of a geometry
@@ -12,7 +12,7 @@ let _equals, _contains, _intersects, _overlaps, _touches; // comparison methods
 _equals = {
     Position: {
         Position(aP, bP) {
-            return aP === bP || Vec2.equality(aP, bP);
+            return aP === bP || Vector.equality(aP, bP);
         }
     },
     Line: {
@@ -204,19 +204,24 @@ _equals = {
 _contains = {
     Line: {
         Position(aL, bP) {
-            let aP_s = aL[$][0], aP_e = aL[$][1];
-            let bv = Vec2.sum(aP_s, Vec2.negative(bP)); bv[1] *= -1;
-            let maxRadius = Vec2.euclNorm(aL);
-            /**
-             * 1. is bP in range to the start of aL?
-             * 2. is bP in range to the end of aL? 
-             *    this check is nessesary, because the next step would also return true if bP is behind aL
-             * 3. does the vector of aL and the vector from the start of aL to bP point in the same direction?
-             *    notice that bv is rotated 90deg above, so the dot product would result in 0, if it is 90deg with aL too
-             */
-            return Vec2.euclNorm(bv) <= maxRadius &&
-                Vec2.euclNorm(Vec2.sum(aP_e, Vec2.negative(bP))) <= maxRadius &&
-                Vec2.dotProd(bv, aL) == 0; // NOTE do not use === here
+            if (aL.length === 2) {
+                let aP_s = aL[$][0], aP_e = aL[$][1];
+                let bv = Vector.sum(aP_s, Vector.negative(bP)); bv[1] *= -1;
+                let maxRadius = Vector.euclNorm(aL);
+                /**
+                 * 1. is bP in range to the start of aL?
+                 * 2. is bP in range to the end of aL? 
+                 *    this check is nessesary, because the next step would also return true if bP is behind aL
+                 * 3. does the vector of aL and the vector from the start of aL to bP point in the same direction?
+                 *    notice that bv is rotated 90deg above, so the dot product would result in 0, if it is 90deg with aL too
+                 */
+                return Vector.euclNorm(bv) <= maxRadius &&
+                    Vector.euclNorm(Vector.sum(aP_e, Vector.negative(bP))) <= maxRadius &&
+                    Vector.dotProd(bv, aL) == 0; // NOTE do not use === here
+            } else {
+                _.assert(false, "currently not supported");
+                // TODO implement
+            }
         }
     },
     Point: {
@@ -414,13 +419,13 @@ _contains = {
 _intersects = {
     Line: {
         Line(aL, bL) {
-            let maxRadius = Math.max(Vec2.euclNorm(aL), Vec2.euclNorm(bL));
+            let maxRadius = Math.max(Vector.euclNorm(aL), Vector.euclNorm(bL));
             let aL_s = aL[$][0], aL_e = aL[$][1], bL_s = bL[$][0], bL_e = bL[$][1];
             let minDist = Math.min(
-                Vec2.euclNorm(Vec2.sum(aL_s, Vec2.negative(bL_s))),
-                Vec2.euclNorm(Vec2.sum(aL_s, Vec2.negative(bL_e))),
-                Vec2.euclNorm(Vec2.sum(aL_e, Vec2.negative(bL_s))),
-                Vec2.euclNorm(Vec2.sum(aL_e, Vec2.negative(bL_e)))
+                Vector.euclNorm(Vector.sum(aL_s, Vector.negative(bL_s))),
+                Vector.euclNorm(Vector.sum(aL_s, Vector.negative(bL_e))),
+                Vector.euclNorm(Vector.sum(aL_e, Vector.negative(bL_s))),
+                Vector.euclNorm(Vector.sum(aL_e, Vector.negative(bL_e)))
             );
             if (minDist > maxRadius) return false;
             _.assert(false, "currently not supported");
@@ -1043,21 +1048,34 @@ _touches = {
 
 //#region Geometry Classes
 
-class Position extends Vec2 {
+class Position extends Vector {
+
+    /**
+     * @param {Array<number>|Vector} pos 
+     * @constructs Position
+     * @private
+     */
+    constructor(pos) {
+        _.assert(pos instanceof Vector || (_.is.array(pos) && pos.every(_.is.number)), "not an array of numbers");
+        _.assert(pos.length > 0, "too few entries");
+        super(pos.length);
+        _.define(this, $, [this]);
+        for (let i = 0; i < this.length; i++) {
+            this[i] = pos[i];
+        }
+    }
 
     /**
      * @param {GeoJSON~Position} args 
      * @returns {Position}
      */
-    static from(args) {
-        _.assert(_.is.array(args) || args instanceof Vec2, "not an array");
-        _.assert(args.length === 2, "only 2d vectors allowed");
-        return new Position(...args);
+    static from(pos) {
+        return new Position(pos);
     }
 
 } // Position
 
-class Line extends Vec2 {
+class Line extends Vector {
 
     /**
      * @param {Position} start 
@@ -1067,9 +1085,13 @@ class Line extends Vec2 {
      */
     constructor(start, end) {
         _.assert(start instanceof Position && end instanceof Position, "not all positions");
+        _.assert(start.length === end.length, "positions of different dimension");
         _.assert(!_equals.Position.Position(start, end), "line is too short");
-        super(end[0] - start[0], end[1] - start[1]);
+        super(start.length);
         _.define(this, $, [start, end]);
+        for (let i = 0; i < this.length; i++) {
+            this[i] = end[i] - start[i];
+        }
     }
 
     /**
@@ -1098,6 +1120,13 @@ class Geometry {
         _.assert(components.every(val => val instanceof Geometry || val instanceof Position || val instanceof Line), "not all geometries, positions or lines");
         _.define(this, $target, new.target);
         _.define(this, $, components);
+        if (components.length > 0) {
+            let dims = components.map(val => val instanceof Geometry ? val.dimension : val.length);
+            _.assert(dims.every((val, i) => !i || val === dims[0]));
+            _.define(this, "dimension", dims[0]);
+        } else {
+            _.define(this, "dimension", 0);
+        }
     }
 
     /** @type {GeoJSON~Geometry#type} */
@@ -1156,7 +1185,8 @@ class Geometry {
      * @returns {boolean}
      */
     equals(that) {
-        _.assert(this instanceof Geometry && that instanceof Geometry);
+        _.assert(this instanceof Geometry && that instanceof Geometry, "not a geometry");
+        _.assert(this.dimension === that.dimension, "geometries of different dimension");
         let available = _equals[this.type];
         _.assert(available, "not available for: " + this.type);
         let comparator = available[that.type];
@@ -1172,7 +1202,8 @@ class Geometry {
      * @returns {boolean}
      */
     contains(that) {
-        _.assert(this instanceof Geometry && that instanceof Geometry);
+        _.assert(this instanceof Geometry && that instanceof Geometry, "not a geometry");
+        _.assert(this.dimension === that.dimension, "geometries of different dimension");
         let available = _contains[this.type];
         _.assert(available, "not available for: " + this.type);
         let comparator = available[that.type];
@@ -1188,7 +1219,8 @@ class Geometry {
      * @returns {boolean}
      */
     intersects(that) {
-        _.assert(this instanceof Geometry && that instanceof Geometry);
+        _.assert(this instanceof Geometry && that instanceof Geometry, "not a geometry");
+        _.assert(this.dimension === that.dimension, "geometries of different dimension");
         let available = _intersects[this.type];
         _.assert(available, "not available for: " + this.type);
         let comparator = available[that.type];
@@ -1204,7 +1236,8 @@ class Geometry {
      * @returns {boolean}
      */
     overlaps(that) {
-        _.assert(this instanceof Geometry && that instanceof Geometry);
+        _.assert(this instanceof Geometry && that instanceof Geometry, "not a geometry");
+        _.assert(this.dimension === that.dimension, "geometries of different dimension");
         let available = _overlaps[this.type];
         _.assert(available, "not available for: " + this.type);
         let comparator = available[that.type];
@@ -1221,7 +1254,8 @@ class Geometry {
      * @returns {boolean}
      */
     touches(that) {
-        _.assert(this instanceof Geometry && that instanceof Geometry);
+        _.assert(this instanceof Geometry && that instanceof Geometry, "not a geometry");
+        _.assert(this.dimension === that.dimension, "geometries of different dimension");
         let available = _touches[this.type];
         _.assert(available, "not available for: " + this.type);
         let comparator = available[that.type];
@@ -1237,6 +1271,7 @@ class Geometry {
      * @returns {boolean}
      */
     disjoint(that) {
+        _.assert(this instanceof Geometry, "not a geometry");
         return !this.intersects(that);
     }
 
@@ -1249,9 +1284,9 @@ class GeometryCollection extends Geometry {
      * @constructs GeometryCollection
      */
     constructor(...geomArr) {
-        super($secret, ...geomArr);
         let valid = [Point, MultiPoint, LineString, MultiLineString, Polygon, MultiPolygon];
         _.assert(geomArr.every(comp => valid.some(clss => comp instanceof clss)), "not all valid geometries");
+        super($secret, ...geomArr);
     }
 
     /** 
@@ -1391,6 +1426,7 @@ class MultiLineString extends Geometry {
      */
     constructor(...lineStrArr) {
         _.assert(lineStrArr.every(lineStr => lineStr instanceof LineString), "not all linestrings");
+        _.assert(lineStrArr.length > 0, "too few linestrings");
         super($secret, ...lineStrArr);
     }
 
@@ -1435,7 +1471,7 @@ class LinearRing extends LineString {
     static from(coords) {
         _.assert(_.is.array(coords) && coords.length > 0, "not an array");
         let posArr = coords.map(Position.from);
-        _.assert(Vec2.equality(posArr[0], posArr[posArr.length - 1]), "the end does not match the beginning");
+        _.assert(Vector.equality(posArr[0], posArr[posArr.length - 1]), "the end does not match the beginning");
         posArr[posArr.length - 1] = posArr[0];
         let lineArr = posArr.slice(1).map((pos, i) => Line.from(posArr[i], pos));
         return new LinearRing(...lineArr);
@@ -1451,6 +1487,7 @@ class Polygon extends Geometry {
      */
     constructor(...ringArr) {
         _.assert(ringArr.every(ring => ring instanceof LinearRing), "not all linearrings");
+        _.assert(ringArr.length > 0, "too few linearrings");
         super($secret, ...ringArr);
     }
 
@@ -1483,6 +1520,7 @@ class MultiPolygon extends Geometry {
      */
     constructor(...polyArr) {
         _.assert(polyArr.every(poly => poly instanceof Polygon), "not all polygons");
+        _.assert(polyArr.length > 0, "too few polygons");
         super($secret, ...polyArr);
     }
 

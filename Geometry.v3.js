@@ -216,10 +216,20 @@ _contains = {
                  */
                 return Vector.euclNorm(bv) <= maxRadius &&
                     Vector.euclNorm(Vector.sum(aP_e, Vector.negative(bP))) <= maxRadius &&
-                    Vector.dotProd(bv, aL) == 0; // NOTE do not use === here
+                    Vector.dotProd(bv, aL) == 0; // NOTE do not use === here // NOTE also possible: < Number.EPSILON 
             } else {
                 _.assert(false, "currently not supported");
                 // TODO implement
+                let
+                    aP_s = aL[$][0],
+                    bv = Vector.sum(bP, Vector.negative(aP_s)),
+                    a_l = Vector.euclNorm(aL),
+                    b_l = Vector.euclNorm(bv);
+
+                return a_l >= b_l && Vector.dotProd(
+                    Vector.scalarProd(aL, Vector.inverse(a_l)),
+                    Vector.scalarProd(bv, Vector.inverse(b_l))
+                ) === 1; // NOTE or near 1, like above with the 0
             }
         }
     },
@@ -418,17 +428,54 @@ _contains = {
 _intersects = {
     Line: {
         Line(aL, bL) {
-            let maxRadius = Math.max(Vector.euclNorm(aL), Vector.euclNorm(bL));
-            let aL_s = aL[$][0], aL_e = aL[$][1], bL_s = bL[$][0], bL_e = bL[$][1];
-            let minDist = Math.min(
-                Vector.euclNorm(Vector.sum(aL_s, Vector.negative(bL_s))),
-                Vector.euclNorm(Vector.sum(aL_s, Vector.negative(bL_e))),
-                Vector.euclNorm(Vector.sum(aL_e, Vector.negative(bL_s))),
-                Vector.euclNorm(Vector.sum(aL_e, Vector.negative(bL_e)))
-            );
-            if (minDist > maxRadius) return false;
-            _.assert(false, "currently not supported");
-            // TODO implement
+            if (aL.length === 2) {
+                let
+                    aL_s = aL[$][0],
+                    aL_e = aL[$][1],
+                    bL_s = bL[$][0],
+                    bL_e = bL[$][1],
+                    ca = aL_e[0] - aL_s[0],
+                    cb = bL_e[0] - bL_s[0],
+                    cc = aL_e[1] - aL_s[1],
+                    cd = bL_e[1] - bL_s[1],
+                    det = ca * cd - cb * cc;
+
+                // TODO inside === intersects
+                if (det === 0) return false;
+
+                let
+                    fx = bL_s[0] - aL_s[0],
+                    fy = bL_s[1] - aL_s[1],
+                    fl = (cd * fx - cb * fy) / det,
+                    fm = (cc * fx - ca * fy) / det;
+
+                return fl >= 0 && fl <= 1 && fm >= 0 && fm <= 1;
+            } else {
+                _.assert(false, "currently not supported");
+                // TODO implement
+
+                let
+                    aL_s = aL[$][0],
+                    aL_e = aL[$][1],
+                    bL_s = bL[$][0],
+                    bL_e = bL[$][1],
+                    as_bs = Vector.sum(bL_s, Vector.negative(aL_s)),
+                    as_be = Vector.sum(bL_e, Vector.negative(aL_s)),
+                    ae_bs = Vector.sum(bL_s, Vector.negative(aL_e)),
+                    ae_be = Vector.sum(bL_e, Vector.negative(aL_e)),
+                    minDist = Math.min(
+                        Vector.euclNorm(as_bs),
+                        Vector.euclNorm(as_be),
+                        Vector.euclNorm(ae_bs),
+                        Vector.euclNorm(ae_be)
+                    ),
+                    maxRadius = Math.max(
+                        Vector.euclNorm(aL),
+                        Vector.euclNorm(bL)
+                    );
+
+                if (minDist > maxRadius) return false;
+            }
         }
     },
     Point: {

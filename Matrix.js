@@ -93,7 +93,7 @@ class Matrix extends Float64Array {
             }
             return res;
         } else {
-            _.assert(_.is.array(arr) && arr.every((brr, i) => (brr instanceof Vector || (_.is.array(brr) && brr.every(_.is.number))) && (!i || brr.length === arr[0].length)), "no matrix array of arrays");
+            _.assert(_.is.array(arr) && arr.every((row, i) => (row instanceof Vector || (_.is.array(row) && row.every(_.is.number))) && (!i || row.length === arr[0].length)), "no matrix array of rows");
             _.assert(arr.length > 0 && arr[0].length > 0, "to few entries");
             let rows = arr.length, cols = arr[0].length;
             let res = Matrix.of(rows, cols);

@@ -9,6 +9,7 @@ class Vector extends Float64Array {
      * @extends Float64Array
      */
     constructor(len) {
+        len = parseInt(len);
         _.assert(_.is.number(len) && len > 0 && len < Infinity && Math.trunc(len) === len, "invalid length");
         super(len);
     }
@@ -27,6 +28,14 @@ class Vector extends Float64Array {
      */
     toJSON() {
         return Array.from(this);
+    }
+
+    /**
+     * Size of a vector, equal to its length.
+     * @type {number}
+     */
+    get size() {
+        return this.length;
     }
 
     /**
@@ -90,6 +99,17 @@ class Vector extends Float64Array {
     }
 
     /**
+     * Provides a 1d-vector for a given entry in this vector.
+     * @param {number} i 
+     */
+    get(i) {
+        _.assert(_.is.number(i) && i === parseInt(i) && i >= 0 && i < this.length, "invalid index");
+        let res = Vector.of(1);
+        res[0] = this[i];
+        return res;
+    }
+
+    /**
      * Constructs a vector of given length.
      * @param {number} len 
      * @param {number|Vec1|Function<number>} [val=0]
@@ -121,10 +141,10 @@ class Vector extends Float64Array {
      * @static
      */
     static from(arr) {
-        _.assert(arr instanceof Vector || Array.isArray(arr), "no array");
-        _.assert(arr.every(_.is.number), "not all numbers");
-        let res = Vector.of(arr.length);
+        _.assert(arr instanceof Vector || (Array.isArray(arr) && arr.every(_.is.number)), "no vector array");
+        _.assert(arr.length > 0, "to few entries");
         let len = arr.length;
+        let res = Vector.of(len);
         for (let i = 0; i < len; i++) {
             res[i] = arr[i];
         }

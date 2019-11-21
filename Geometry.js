@@ -1083,6 +1083,10 @@ _touches = {
 
 //#region Geometry Classes
 
+/** {@link https://geojson.org/ GeoJSON} */
+/** {@link https://tools.ietf.org/html/rfc7946 The GeoJSON Format} */
+
+/** {@link https://tools.ietf.org/html/rfc7946#section-3.1.1 Position} */
 class Position extends Vector {
 
     /**
@@ -1110,6 +1114,7 @@ class Position extends Vector {
 
 } // Position
 
+/** @description Added to make calculation with linestrings easier. */
 class Line extends Vector {
 
     /**
@@ -1140,6 +1145,7 @@ class Line extends Vector {
 
 } // Line
 
+/** {@link https://tools.ietf.org/html/rfc7946#section-3.1 Geometry Object} */
 class Geometry {
 
     /**
@@ -1326,6 +1332,8 @@ class Geometry {
 
 } // Geometry
 
+/** {@link https://tools.ietf.org/html/rfc7946#section-3.1.2 Point} */
+/** {@link https://tools.ietf.org/html/rfc7946#appendix-A.1 Points} */
 class Point extends Geometry {
 
     /**
@@ -1360,6 +1368,8 @@ class Point extends Geometry {
 
 } // Point
 
+/** {@link https://tools.ietf.org/html/rfc7946#section-3.1.3 MultiPoint} */
+/** {@link https://tools.ietf.org/html/rfc7946#appendix-A.4 MultiPoints} */
 class MultiPoint extends Geometry {
 
     /**
@@ -1397,6 +1407,8 @@ class MultiPoint extends Geometry {
 
 } // MultiPoint
 
+/** {@link https://tools.ietf.org/html/rfc7946#section-3.1.4 LineString} */
+/** {@link https://tools.ietf.org/html/rfc7946#appendix-A.2 LineStrings} */
 class LineString extends Geometry {
 
     /**
@@ -1438,6 +1450,8 @@ class LineString extends Geometry {
 
 } // LineString
 
+/** {@link https://tools.ietf.org/html/rfc7946#section-3.1.5 MultiLineString} */
+/** {@link https://tools.ietf.org/html/rfc7946#appendix-A.5 MultiLineStrings} */
 class MultiLineString extends Geometry {
 
     /**
@@ -1475,6 +1489,7 @@ class MultiLineString extends Geometry {
 
 } // MultiLineString
 
+/** @description Added to externalize linearring requirements for polygons. */
 class LinearRing extends LineString {
 
     /**
@@ -1507,6 +1522,8 @@ class LinearRing extends LineString {
 
 } // LinearRing
 
+/** {@link https://tools.ietf.org/html/rfc7946#section-3.1.6 Polygon} */
+/** {@link https://tools.ietf.org/html/rfc7946#appendix-A.3 Polygons} */
 class Polygon extends Geometry {
 
     /**
@@ -1544,6 +1561,8 @@ class Polygon extends Geometry {
 
 } // Polygon
 
+/** {@link https://tools.ietf.org/html/rfc7946#section-3.1.7 MultiPolygon} */
+/** {@link https://tools.ietf.org/html/rfc7946#appendix-A.6 MultiPolygons} */
 class MultiPolygon extends Geometry {
 
     /**
@@ -1581,6 +1600,8 @@ class MultiPolygon extends Geometry {
 
 } // MultiPolygon
 
+/** {@link https://tools.ietf.org/html/rfc7946#section-3.1.8 GeometryCollection} */
+/** {@link https://tools.ietf.org/html/rfc7946#appendix-A.7 GeometryCollections} */
 class GeometryCollection extends Geometry {
 
     /**

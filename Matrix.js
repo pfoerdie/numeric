@@ -31,7 +31,7 @@ class Matrix extends Float64Array {
         for (let i = 0; i < this.rows; i++) {
             res[i] = new Vector(this.cols);
             for (let j = 0; j < this.cols; j++) {
-                res[i][j] = this[i * this.rows + j];
+                res[i][j] = this[i * this.cols + j];
             }
         }
         return res;
@@ -55,7 +55,7 @@ class Matrix extends Float64Array {
         _.assert(_.is.number(i) && i === parseInt(i) && i >= 0 && i < this.rows, "invalid index");
         _.assert(_.is.number(j) && j === parseInt(j) && j >= 0 && j < this.cols, "invalid jndex");
         let res = Vector.of(1);
-        res[0] = this[i * this.rows + j];
+        res[0] = this[i * this.cols + j];
         return res;
     }
 
@@ -70,9 +70,9 @@ class Matrix extends Float64Array {
                 if (isFn) {
                     let v = val(i, j);
                     _.assert(_.is.number(v), "not a number");
-                    res[i * rows + j] = v;
+                    res[i * cols + j] = v;
                 } else {
-                    res[i * rows + j] = isVec ? val[0] : val;
+                    res[i * cols + j] = isVec ? val[0] : val;
                 }
             }
         }
@@ -99,36 +99,56 @@ class Matrix extends Float64Array {
             let res = Matrix.of(rows, cols);
             for (let i = 0; i < rows; i++) {
                 for (let j = 0; j < cols; j++) {
-                    res[i * rows + j] = arr[i][j];
+                    res[i * cols + j] = arr[i][j];
                 }
             }
             return res;
         }
     }
 
+    /**
+     * Executes the gaussian elimination on a matrix.
+     * @param {Matrix} arr
+     * @returns {Matrix} 
+     * @static
+     */
     static gaussElim(mat) {
         _.assert(mat instanceof Matrix, "not a matrix");
-        // _.assert(mat.cols > 1, "at least 2 columns needed");
-        if (mat.cols === 1) return Matrix.of(mat.rows, mat.cols, i => i ? 0 : 1);
+
         /** @type {Array<Vector>} */
-        let arr = mat.toJSON();
-        main: for (let k = 0, kmax = Math.min(mat.rows, mat.cols - 1); k < kmax; k++) {
+        let arr = mat.toJSON(); // array of rows
+        let p_row = 0, p_col = 0; // pivot row and column
 
-            // big TODO
+        while (p_row < mat.rows && p_col < mat.cols) {
 
-            if (arr[k][k] === 0) {
-                let next_k = arr.findIndex((row, i) => i > k && row[k] !== 0);
-                if (next_k < 0) break main;
-                _.assert(next_k > k, "not diag");
-                let tmp = arr[k];
-                arr[k] = arr[next_k];
-                arr[next_k] = tmp;
+            // find next pivot
+            let ni = p_row, nv = arr[ni][p_col];
+            for (let i = p_row + 1; i < mat.rows; i++) {
+                let v = arr[i][p_col];
+                if (Math.abs(v) > Math.abs(nv)) { ni = i; nv = v; }
             }
-            for (let i = k + 1; i < mat.cols; i++) {
 
+            if (nv === 0) {
+                // no pivot found, so increase pivot column
+                p_col++;
+            } else {
+                // else swap with pivot row
+                let tmp = arr[p_row]; arr[p_row] = arr[ni]; arr[ni] = tmp;
+
+                // then reduce rows below
+                for (let i = 0; i < mat.rows; i++) {
+                    if (i !== p_row) {
+                        arr[i] = Vector.sum(arr[i], Vector.scalarProd(arr[p_row], - arr[i][p_col] / arr[p_row][p_col]));
+                        arr[i][p_col] = 0;
+                    }
+                }
+
+                // increase both pivots
+                p_col++; p_row++;
             }
-        }
-        throw new Error("not implemented yet");
+
+        } // while
+
         return Matrix.from(arr);
     }
 

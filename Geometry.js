@@ -3,7 +3,8 @@ const
     Vector = require("./Vector.js"),
     Matrix = require("./Matrix.js"),
     $secret = Symbol(), // to unlock hidden constructor
-    $ = Symbol("$"); // components of a geometry
+    $ = Symbol("components"),
+    $bbox = Symbol("bounding box"); // components of a geometry
 
 let _equals, _contains, _intersects, _overlaps, _touches; // comparison methods
 
@@ -204,34 +205,27 @@ _equals = {
 _contains = {
     Line: {
         Position(aL, bP) {
-            if (aL.length === 2) {
-                let aP_s = aL[$][0], aP_e = aL[$][1];
-                let bv = Vector.sum(aP_s, Vector.negative(bP)); bv[1] *= -1;
-                let maxRadius = Vector.euclNorm(aL);
-                /**
-                 * 1. is bP in range to the start of aL?
-                 * 2. is bP in range to the end of aL? 
-                 *    this check is nessesary, because the next step would also return true if bP is behind aL
-                 * 3. does the vector of aL and the vector from the start of aL to bP point in the same direction?
-                 *    notice that bv is rotated 90deg above, so the dot product would result in 0, if it is 90deg with aL too
-                 */
-                return Vector.euclNorm(bv) <= maxRadius &&
-                    Vector.euclNorm(Vector.sum(aP_e, Vector.negative(bP))) <= maxRadius &&
-                    Vector.dotProd(bv, aL) == 0; // NOTE do not use === here // NOTE also possible: < Number.EPSILON 
-            } else {
-                _.assert(false, "currently not supported");
-                // TODO implement
-                let
-                    aP_s = aL[$][0],
-                    bv = Vector.sum(bP, Vector.negative(aP_s)),
-                    a_l = Vector.euclNorm(aL),
-                    b_l = Vector.euclNorm(bv);
-
-                return a_l >= b_l && Vector.dotProd(
-                    Vector.scalarProd(aL, Vector.inverse(a_l)),
-                    Vector.scalarProd(bv, Vector.inverse(b_l))
-                ) === 1; // NOTE or near 1, like above with the 0
-            }
+            let aL_s = aL[$][0];
+            let linEq = Matrix.of(aL.length, 2, (i, j) => {
+                switch (j) {
+                    case 0: return aL[i];
+                    case 1: return bP[i] - aL_s[i];
+                }
+            });
+            // solve the linear equation for x:
+            // x * aL = bP - aL_s 
+            let tmp, svdEq = Matrix.gaussElim(linEq).toJSON(), nullRow = Vector.of(2);
+            return svdEq.every((row, i) => {
+                switch (i) {
+                    case 0:
+                        // tmp contains the factor to move along aL to reach bP
+                        tmp = row[1] / row[0];
+                        return tmp >= 0 && tmp <= 1;
+                    default:
+                        // but just if every other row is empty
+                        return Vector.equality(row, nullRow);
+                }
+            });
         }
     },
     Point: {
@@ -429,53 +423,46 @@ _contains = {
 _intersects = {
     Line: {
         Line(aL, bL) {
-            if (aL.length === 2) {
-                let
-                    aL_s = aL[$][0],
-                    aL_e = aL[$][1],
-                    bL_s = bL[$][0],
-                    bL_e = bL[$][1],
-                    ca = aL_e[0] - aL_s[0],
-                    cb = bL_e[0] - bL_s[0],
-                    cc = aL_e[1] - aL_s[1],
-                    cd = bL_e[1] - bL_s[1],
-                    det = ca * cd - cb * cc;
-
-                // TODO inside === intersects
-                if (det === 0) return false;
-
-                let
-                    fx = bL_s[0] - aL_s[0],
-                    fy = bL_s[1] - aL_s[1],
-                    fl = (cd * fx - cb * fy) / det,
-                    fm = (cc * fx - ca * fy) / det;
-
-                return fl >= 0 && fl <= 1 && fm >= 0 && fm <= 1;
+            let aL_s = aL[$][0], bL_s = bL[$][0];
+            let linEq = Matrix.of(aL.length, 3, (i, j) => {
+                switch (j) {
+                    case 0: return aL[i];
+                    case 1: return -bL[i];
+                    case 2: return bL_s[i] - aL_s[i];
+                }
+            });
+            // solve the linear equation for x and y: 
+            // x * aL - y * bL = bL_s - aL_s
+            let tmp, svdEq = Matrix.gaussElim(linEq).toJSON(), nullRow = Vector.of(3);
+            if (Math.abs(svdEq[1][1]) < Number.EPSILON) {
+                // special case if vectors are parallel
+                return svdEq.every((row, i) => {
+                    switch (i) {
+                        case 0:
+                            // the intersection has to be between all options of line endings
+                            let optns = [0, row[0], row[1], row[0] + row[1]];
+                            return row[2] >= Math.min(...optns) && row[2] <= Math.max(...optns);
+                        default:
+                            // but just if every other row is empty, else they are not in line
+                            return Vector.equality(row, nullRow);
+                    }
+                });
             } else {
-                _.assert(false, "currently not supported");
-                // TODO implement
-
-                let
-                    aL_s = aL[$][0],
-                    aL_e = aL[$][1],
-                    bL_s = bL[$][0],
-                    bL_e = bL[$][1],
-                    as_bs = Vector.sum(bL_s, Vector.negative(aL_s)),
-                    as_be = Vector.sum(bL_e, Vector.negative(aL_s)),
-                    ae_bs = Vector.sum(bL_s, Vector.negative(aL_e)),
-                    ae_be = Vector.sum(bL_e, Vector.negative(aL_e)),
-                    minDist = Math.min(
-                        Vector.euclNorm(as_bs),
-                        Vector.euclNorm(as_be),
-                        Vector.euclNorm(ae_bs),
-                        Vector.euclNorm(ae_be)
-                    ),
-                    maxRadius = Math.max(
-                        Vector.euclNorm(aL),
-                        Vector.euclNorm(bL)
-                    );
-
-                if (minDist > maxRadius) return false;
+                return svdEq.every((row, i) => {
+                    switch (i) {
+                        case 0:
+                            // tmp contains the factor to move along aL to reach the intersection
+                            tmp = row[2] / row[0];
+                            return tmp >= 0 && tmp <= 1;
+                        case 1:
+                            // tmp contains the factor to move along bL to reach the intersection
+                            tmp = row[2] / row[1];
+                            return tmp >= 0 && tmp <= 1;
+                        default:
+                            // but just if every other row is empty
+                            return Vector.equality(row, nullRow);
+                    }
+                });
             }
         }
     },
@@ -1174,6 +1161,19 @@ class Geometry {
             _.define(this, "dimension", 0);
         }
 
+        // TODO bounding box
+        // _.define(this, $bbox, [
+        //     Vector.from(new Array(this.dimension).fill(Infinity).map((val, i) =>
+        //         components.reduce(
+        //             val => val instanceof Geometry ? val[$bbox][0][i]
+        //                 : val instanceof Position ? val[i]
+        //                     : val[$][0]
+        //         )
+        //     )),
+        //     Vector.from(new Array(this.dimension).fill(Infinity).map(
+        //         (val, i) => Math.max(val)
+        //     ))
+        // ]);
         _.define(this, $, components);
     }
 

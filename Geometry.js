@@ -219,6 +219,7 @@ _contains = {
                 switch (i) {
                     case 0:
                         // tmp contains the factor to move along aL to reach bP
+                        if (Math.sign(row[0]) !== Math.sign(row[1])) return false;
                         tmp = row[1] / row[0];
                         return tmp >= 0 && tmp <= 1;
                     default:

@@ -3,8 +3,8 @@ const
     Vector = require("./Vector.js"),
     Matrix = require("./Matrix.js"),
     $secret = Symbol(), // to unlock hidden constructor
-    $ = Symbol("components"),
-    $bbox = Symbol("bounding box"); // components of a geometry
+    $comp = Symbol("comp"), // components of a geometry
+    $bbox = Symbol("bbox"); // bounding box of a geometry
 
 let _equals, _contains, _intersects, _overlaps, _touches; // comparison methods
 
@@ -19,13 +19,13 @@ _equals = {
     Line: {
         Line(aL, bL) {
             return aL === bL ||
-                (_equals.Position.Position(aL[$][0], bL[$][0]) && _equals.Position.Position(aL[$][1], bL[$][1])) ||
-                (_equals.Position.Position(aL[$][0], bL[$][1]) && _equals.Position.Position(aL[$][1], bL[$][0]));
+                (_equals.Position.Position(aL[$comp][0], bL[$comp][0]) && _equals.Position.Position(aL[$comp][1], bL[$comp][1])) ||
+                (_equals.Position.Position(aL[$comp][0], bL[$comp][1]) && _equals.Position.Position(aL[$comp][1], bL[$comp][0]));
         }
     },
     Point: {
         Point(aPt, bPt) {
-            return aPt === bPt || _equals.Position.Position(aPt[$][0], bPt[$][0]);
+            return aPt === bPt || _equals.Position.Position(aPt[$comp][0], bPt[$comp][0]);
         },
         MultiPoint(aPt, bMPt) {
             return _equals.MultiPoint.Point(bMPt, aPt);
@@ -48,7 +48,7 @@ _equals = {
     },
     MultiPoint: {
         Point(aMPt, bPt) {
-            return aMPt[$].every(aPt => _equals.Point.Point(aPt, bPt));
+            return aMPt[$comp].every(aPt => _equals.Point.Point(aPt, bPt));
         },
         MultiPoint(aMPt, bMPt) {
             return aMPt === bMPt ||
@@ -205,7 +205,7 @@ _equals = {
 _contains = {
     Line: {
         Position(aL, bP) {
-            let aL_s = aL[$][0];
+            let aL_s = aL[$comp][0];
             let linEq = Matrix.of(aL.length, 2, (i, j) => {
                 switch (j) {
                     case 0: return aL[i];
@@ -255,10 +255,10 @@ _contains = {
     },
     MultiPoint: {
         Point(aMPt, bPt) {
-            return aMPt[$].some(aPt => _equals.Point.Point(aPt, bPt));
+            return aMPt[$comp].some(aPt => _equals.Point.Point(aPt, bPt));
         },
         MultiPoint(aMPt, bMPt) {
-            return bMPt[$].every(bPt => _contains.MultiPoint.Point(aMPt, bPt));
+            return bMPt[$comp].every(bPt => _contains.MultiPoint.Point(aMPt, bPt));
         },
         LineString(aMPt, bLS) {
             return false;
@@ -279,10 +279,10 @@ _contains = {
     },
     LineString: {
         Point(aLS, bPt) {
-            return aLS[$].some(aL => _contains.Line.Position(aL, bPt[$][0]));
+            return aLS[$comp].some(aL => _contains.Line.Position(aL, bPt[$comp][0]));
         },
         MultiPoint(aLS, bMPt) {
-            return bMPt[$].every(bPt => _contains.LineString.Point(aLS, bPt));
+            return bMPt[$comp].every(bPt => _contains.LineString.Point(aLS, bPt));
         },
         LineString(aLS, bLS) {
             _.assert(false, "currently not supported");
@@ -305,10 +305,10 @@ _contains = {
     },
     MultiLineString: {
         Point(aMLS, bPt) {
-            return aMLS[$].some(aLS => _contains.LineString.Point(aLS, bPt));
+            return aMLS[$comp].some(aLS => _contains.LineString.Point(aLS, bPt));
         },
         MultiPoint(aMLS, bMPt) {
-            return bMPt[$].every(bPt => _contains.MultiLineString.Point(aMLS, bPt));
+            return bMPt[$comp].every(bPt => _contains.MultiLineString.Point(aMLS, bPt));
         },
         LineString(aMLS, bLS) {
             _.assert(false, "currently not supported");
@@ -331,8 +331,21 @@ _contains = {
     },
     Polygon: {
         Point(aPg, bPt) {
-            _.assert(false, "currently not supported");
-            // TODO implement
+            _.assert(aPg.dimension === 2, "currently only supported for 2d polygons");
+            let bbox_i = aPg[$bbox].findIndex(pos => pos.every(val => val > - Infinity && val < Infinity));
+            // NOTE search for this diagonal can be improved and restriction can be decreased
+            _.assert(bbox_i != -1, "calculation not possible for polygons with infinite bounding");
+            // the diagonal starts from the point and ends in a corner of the bounding box
+            // so outside of the polygon
+            let diaL = Line.from(bPt[$comp][0], aPg[$bbox][bbox_i]);
+            return aPg[$comp].every((aLS, i) => {
+                let count = aLS[$comp].filter(aL => _intersects.Line.Line(aL, diaL)).length;
+                if (i > 0) count++;
+                // if the count of intersections with the diagonal is even, the point is outside the polygon
+                // though this only applies for the first linear ring, because all further rings are holes
+                // thats why the count is increased for all but the first ring
+                return count % 2 > 0;
+            });
         },
         MultiPoint(aPg, bMPt) {
             _.assert(false, "currently not supported");
@@ -424,7 +437,7 @@ _contains = {
 _intersects = {
     Line: {
         Line(aL, bL) {
-            let aL_s = aL[$][0], bL_s = bL[$][0];
+            let aL_s = aL[$comp][0], bL_s = bL[$comp][0];
             let linEq = Matrix.of(aL.length, 3, (i, j) => {
                 switch (j) {
                     case 0: return aL[i];
@@ -492,10 +505,10 @@ _intersects = {
     },
     MultiPoint: {
         Point(aMPt, bPt) {
-            return aMPt[$].some(aPt => _intersects.Point.Point(aPt, bPt));
+            return aMPt[$comp].some(aPt => _intersects.Point.Point(aPt, bPt));
         },
         MultiPoint(aMPt, bMPt) {
-            return bMPt[$].some(bPt => _intersects.MultiPoint.Point(aMPt, bPt));
+            return bMPt[$comp].some(bPt => _intersects.MultiPoint.Point(aMPt, bPt));
         },
         LineString(aMPt, bLS) {
             return _intersects.LineString.MultiPoint(bLS, aMPt);
@@ -518,10 +531,10 @@ _intersects = {
             return _contains.LineString.Point(aLS, bPt);
         },
         MultiPoint(aLS, bMPt) {
-            return bMPt[$].some(bPt => _intersects.LineString.Point(aLS, bPt));
+            return bMPt[$comp].some(bPt => _intersects.LineString.Point(aLS, bPt));
         },
         LineString(aLS, bLS) {
-            return aLS[$].some(aL => bLS[$].some(bL => _intersects.Line.Line(aL, bL)));
+            return aLS[$comp].some(aL => bLS[$comp].some(bL => _intersects.Line.Line(aL, bL)));
         },
         MultiLineString(aLS, bMLS) {
             return _intersects.MultiLineString.LineString(bMLS, aLS);
@@ -538,16 +551,16 @@ _intersects = {
     },
     MultiLineString: {
         Point(aMLS, bPt) {
-            return aMLS[$].some(aLS => _intersects.LineString.Point(aLS, bPt));
+            return aMLS[$comp].some(aLS => _intersects.LineString.Point(aLS, bPt));
         },
         MultiPoint(aMLS, bMPt) {
-            return aMLS[$].some(aLS => _intersects.LineString.MultiPoint(aLS, bMPt));
+            return aMLS[$comp].some(aLS => _intersects.LineString.MultiPoint(aLS, bMPt));
         },
         LineString(aMLS, bLS) {
-            return aMLS[$].some(aLS => _intersects.LineString.LineString(aLS, bLS));
+            return aMLS[$comp].some(aLS => _intersects.LineString.LineString(aLS, bLS));
         },
         MultiLineString(aMLS, bMLS) {
-            return bMLS[$].some(bLS => _intersects.MultiLineString.LineString(aMLS, bLS));
+            return bMLS[$comp].some(bLS => _intersects.MultiLineString.LineString(aMLS, bLS));
         },
         Polygon(aMLS, bPg) {
             return _intersects.Polygon.MultiLineString(bPg, aMLS);
@@ -618,25 +631,25 @@ _intersects = {
     },
     GeometryCollection: {
         Point(aGC, bPt) {
-            return aGC[$].some(aG => aG.intersects(bPt));
+            return aGC[$comp].some(aG => aG.intersects(bPt));
         },
         MultiPoint(aGC, bMPt) {
-            return aGC[$].some(aG => aG.intersects(bMPt));
+            return aGC[$comp].some(aG => aG.intersects(bMPt));
         },
         LineString(aGC, bLS) {
-            return aGC[$].some(aG => aG.intersects(bLS));
+            return aGC[$comp].some(aG => aG.intersects(bLS));
         },
         MultiLineString(aGC, bMLS) {
-            return aGC[$].some(aG => aG.intersects(bMLS));
+            return aGC[$comp].some(aG => aG.intersects(bMLS));
         },
         Polygon(aGC, bPg) {
-            return aGC[$].some(aG => aG.intersects(bPg));
+            return aGC[$comp].some(aG => aG.intersects(bPg));
         },
         MultiPolygon(aGC, bMPg) {
-            return aGC[$].some(aG => aG.intersects(bMPg));
+            return aGC[$comp].some(aG => aG.intersects(bMPg));
         },
         GeometryCollection(aGC, bGC) {
-            return aGC[$].some(aG => aG.intersects(bGC));
+            return aGC[$comp].some(aG => aG.intersects(bGC));
         }
     }
 }; // _intersects
@@ -1098,7 +1111,7 @@ class Position extends Vector {
         _.assert(pos instanceof Vector || (_.is.array(pos) && pos.every(_.is.number)), "not an array of numbers");
         _.assert(pos.length > 0, "too few entries");
         super(pos.length);
-        _.define(this, $, [this]);
+        _.define(this, $comp, [this]);
         for (let i = 0; i < this.length; i++) {
             this[i] = pos[i];
         }
@@ -1128,7 +1141,7 @@ class Line extends Vector {
         _.assert(start.length === end.length, "positions of different dimension");
         _.assert(!_equals.Position.Position(start, end), "line is too short");
         super(start.length);
-        _.define(this, $, [start, end]);
+        _.define(this, $comp, [start, end]);
         for (let i = 0; i < this.length; i++) {
             this[i] = end[i] - start[i];
         }
@@ -1168,20 +1181,25 @@ class Geometry {
             _.define(this, "dimension", 0);
         }
 
-        // TODO bounding box
-        // _.define(this, $bbox, [
-        //     Vector.from(new Array(this.dimension).fill(Infinity).map((val, i) =>
-        //         components.reduce(
-        //             val => val instanceof Geometry ? val[$bbox][0][i]
-        //                 : val instanceof Position ? val[i]
-        //                     : val[$][0]
-        //         )
-        //     )),
-        //     Vector.from(new Array(this.dimension).fill(Infinity).map(
-        //         (val, i) => Math.max(val)
-        //     ))
-        // ]);
-        _.define(this, $, components);
+        // NOTE search for the bounding box could be more efficient
+        _.define(this, $bbox, [
+            Vector.of(this.dimension, i => components.reduce(
+                (acc, val) => Math.min(acc,
+                    val instanceof Geometry ? val[$bbox][0][i]
+                        : val instanceof Line ? Math.min(val[$comp][0][i], val[$comp][1][i])
+                            : val[i]),
+                Infinity
+            )),
+            Vector.of(this.dimension, i => components.reduce(
+                (acc, val) => Math.max(acc,
+                    val instanceof Geometry ? val[$bbox][1][i]
+                        : val instanceof Line ? Math.max(val[$comp][0][i], val[$comp][1][i])
+                            : val[i]),
+                -Infinity
+            ))
+        ].map(Position.from));
+
+        _.define(this, $comp, components);
     }
 
     /** @type {GeoJSON~Geometry#type} */
@@ -1354,7 +1372,7 @@ class Point extends Geometry {
      * @type {GeoJSON~Point#coordinates} 
      */
     get coordinates() {
-        return this[$][0];
+        return this[$comp][0];
     }
 
     /**
@@ -1391,7 +1409,7 @@ class MultiPoint extends Geometry {
      * @type {GeoJSON~MultiPoint#coordinates} 
      */
     get coordinates() {
-        let posArr = this[$].map(point => point.coordinates);
+        let posArr = this[$comp].map(point => point.coordinates);
         return posArr;
     }
 
@@ -1418,7 +1436,7 @@ class LineString extends Geometry {
     constructor(...lineArr) {
         _.assert(lineArr.every(line => line instanceof Line), "not all lines");
         _.assert(lineArr.length > 0, "too few lines");
-        _.assert(lineArr.every((line, i) => i === 0 || line[$][0] === lineArr[i - 1][$][1]), "lines does not match up");
+        _.assert(lineArr.every((line, i) => i === 0 || line[$comp][0] === lineArr[i - 1][$comp][1]), "lines does not match up");
         super($secret, ...lineArr);
     }
 
@@ -1431,9 +1449,9 @@ class LineString extends Geometry {
      * @type {GeoJSON~LineString#coordinates} 
      */
     get coordinates() {
-        let lineArr = this[$];
-        let posArr = lineArr.map(line => line[$][0]);
-        posArr.push(lineArr[lineArr.length - 1][$][1]);
+        let lineArr = this[$comp];
+        let posArr = lineArr.map(line => line[$comp][0]);
+        posArr.push(lineArr[lineArr.length - 1][$comp][1]);
         return posArr;
     }
 
@@ -1473,7 +1491,7 @@ class MultiLineString extends Geometry {
      * @type {GeoJSON~MultiLineString#coordinates} 
      */
     get coordinates() {
-        let lineArr = this[$].map(lineStr => lineStr.coordinates);
+        let lineArr = this[$comp].map(lineStr => lineStr.coordinates);
         return lineArr;
     }
 
@@ -1500,7 +1518,7 @@ class LinearRing extends LineString {
     constructor(...lineArr) {
         super(...lineArr);
         _.assert(lineArr.length > 2, "too few lines");
-        _.assert(lineArr[0][$][0] === lineArr[lineArr.length - 1][$][1], "the end does not match the beginning");
+        _.assert(lineArr[0][$comp][0] === lineArr[lineArr.length - 1][$comp][1], "the end does not match the beginning");
     }
 
     get type() {
@@ -1545,7 +1563,7 @@ class Polygon extends Geometry {
      * @type {GeoJSON~Polygon#coordinates} 
      */
     get coordinates() {
-        let lineArr = this[$].map(lineStr => lineStr.coordinates);
+        let lineArr = this[$comp].map(lineStr => lineStr.coordinates);
         return lineArr;
     }
 
@@ -1584,7 +1602,7 @@ class MultiPolygon extends Geometry {
      * @type {GeoJSON~MultiPolygon#coordinates} 
      */
     get coordinates() {
-        let polyArr = this[$].map(poly => poly.coordinates);
+        let polyArr = this[$comp].map(poly => poly.coordinates);
         return polyArr;
     }
 
@@ -1622,7 +1640,7 @@ class GeometryCollection extends Geometry {
      * @type {GeoJSON~GeometryCollection#geometries}
      */
     get geometries() {
-        let collection = this[$].map(geom => geom.toJSON());
+        let collection = this[$comp].map(geom => geom.toJSON());
         return collection;
     }
 

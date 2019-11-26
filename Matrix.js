@@ -1,3 +1,7 @@
+/**
+ * @module Numeric.Matrix
+ */
+
 const
     _ = require("./tools.js"),
     { Vec1 } = Vector = require("./Vector.js");

@@ -1,3 +1,7 @@
+/**
+ * @module Numeric.Vector
+ */
+
 const _ = require("./tools.js");
 
 class Vector extends Float64Array {
@@ -426,7 +430,6 @@ class Vector extends Float64Array {
      * @static
      */
     static metric(vecA, vecB, norm = Vector.euclNorm) {
-        // TODO
         _.assert(vecA instanceof Vector && vecB instanceof Vector, "not all vectors");
         _.assert(vecA.length === vecB.length, "different length vectors");
         _.assert(Vector.isNorm(norm), "invalid norm");
@@ -436,6 +439,46 @@ class Vector extends Float64Array {
             vec[i] = vecA[i] - vecB[i];
         }
         let res = norm(vec);
+        return res;
+    }
+
+    /**
+     * Returns a new vector with the entrywise minimum.
+     * @param  {...Vector} vecs 
+     * @returns {Vector}
+     * @static
+     */
+    static min(...vecs) {
+        _.assert(vecs.length > 0, "to few arguments");
+        _.assert(vecs.every(vec => vec instanceof Vector), "not all vectors");
+        let len = vecs[0].length;
+        _.assert(vecs.every(vec => vec.length === len), "different length vectors");
+        let res = Vector.of(len, Infinity);
+        for (let vec of vecs) {
+            for (let i = 0; i < len; i++) {
+                if (vec[i] < res[i]) res[i] = vec[i];
+            }
+        }
+        return res;
+    }
+
+    /**
+     * Returns a new vector with the entrywise maximum.
+     * @param  {...Vector} vecs 
+     * @returns {Vector}
+     * @static
+     */
+    static max(...vecs) {
+        _.assert(vecs.length > 0, "to few arguments");
+        _.assert(vecs.every(vec => vec instanceof Vector), "not all vectors");
+        let len = vecs[0].length;
+        _.assert(vecs.every(vec => vec.length === len), "different length vectors");
+        let res = Vector.of(len, -Infinity);
+        for (let vec of vecs) {
+            for (let i = 0; i < len; i++) {
+                if (vec[i] > res[i]) res[i] = vec[i];
+            }
+        }
         return res;
     }
 

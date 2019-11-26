@@ -1,3 +1,9 @@
+/**
+ * @module Numeric.Geometry
+ * {@link https://geojson.org/ GeoJSON}
+ * {@link https://tools.ietf.org/html/rfc7946 The GeoJSON Format}
+ */
+
 const
     _ = require("./tools.js"),
     Vector = require("./Vector.js"),
@@ -249,8 +255,7 @@ _contains = {
             return false;
         },
         GeometryCollection(aPt, bGC) {
-            _.assert(false, "currently not supported");
-            // TODO implement
+            return bGC[$comp].every(bG => aPt.contains(bG));
         }
     },
     MultiPoint: {
@@ -273,8 +278,7 @@ _contains = {
             return false;
         },
         GeometryCollection(aMPt, bGC) {
-            _.assert(false, "currently not supported");
-            // TODO implement
+            return bGC[$comp].every(bG => aMPt.contains(bG));
         }
     },
     LineString: {
@@ -299,8 +303,7 @@ _contains = {
             return false;
         },
         GeometryCollection(aLS, bGC) {
-            _.assert(false, "currently not supported");
-            // TODO implement
+            return bGC[$comp].every(bG => aLS.contains(bG));
         }
     },
     MultiLineString: {
@@ -325,12 +328,13 @@ _contains = {
             return false;
         },
         GeometryCollection(aMLS, bGC) {
-            _.assert(false, "currently not supported");
-            // TODO implement
+            return bGC[$comp].every(bG => aMLS.contains(bG));
         }
     },
     Polygon: {
         Point(aPg, bPt) {
+            // NOTE polygons can also be viewed as depending only on the first 2 entries of a vector
+            // and all other entries as independend to the problem
             _.assert(aPg.dimension === 2, "currently only supported for 2d polygons");
             let bbox_i = aPg[$bbox].findIndex(pos => pos.every(val => val > - Infinity && val < Infinity));
             // NOTE search for this diagonal can be improved and restriction can be decreased
@@ -368,8 +372,7 @@ _contains = {
             // TODO implement
         },
         GeometryCollection(aPg, bGC) {
-            _.assert(false, "currently not supported");
-            // TODO implement
+            return bGC[$comp].every(bG => aPg.contains(bG));
         }
     },
     MultiPolygon: {
@@ -398,18 +401,15 @@ _contains = {
             // TODO implement
         },
         GeometryCollection(aMPg, bGC) {
-            _.assert(false, "currently not supported");
-            // TODO implement
+            return bGC[$comp].every(bG => aMPg.contains(bG));
         }
     },
     GeometryCollection: {
         Point(aGC, bPt) {
-            _.assert(false, "currently not supported");
-            // TODO implement
+            return aGC[$comp].some(aG => aG.contains(bPt));
         },
         MultiPoint(aGC, bMPt) {
-            _.assert(false, "currently not supported");
-            // TODO implement
+            return bMPt[$comp].every(bPt => _contains.GeometryCollection.Point(aGC, bPt));
         },
         LineString(aGC, bLS) {
             _.assert(false, "currently not supported");
@@ -428,8 +428,7 @@ _contains = {
             // TODO implement
         },
         GeometryCollection(aGC, bGC) {
-            _.assert(false, "currently not supported");
-            // TODO implement
+            return bGC[$comp].every(bG => aGC.contains(bG));
         }
     }
 }; // _contains
@@ -574,20 +573,22 @@ _intersects = {
     },
     Polygon: {
         Point(aPg, bPt) {
-            _.assert(false, "currently not supported");
-            // TODO implement
+            return _contains.Polygon.Point(aPg, bPt);
         },
         MultiPoint(aPg, bMPt) {
-            _.assert(false, "currently not supported");
-            // TODO implement
+            return bMPt[$comp].some(bPt => _intersects.Polygon.Point(aPg, bPt));
         },
         LineString(aPg, bLS) {
+            if (aPg[$comp].some(aLS => _intersects.LineString.LineString(aLS, bLS)))
+                return true;
+
             _.assert(false, "currently not supported");
-            // TODO implement
+            // TODO linestrings can also be inside without intersecting the boundary
+            // similar to _contains.Polygon.LineString, but not combinable, because
+            // contains would also need to check, if the linestring leaves the polygon
         },
         MultiLineString(aPg, bMLS) {
-            _.assert(false, "currently not supported");
-            // TODO implement
+            return bMLS[$comp].some(bLS => _intersects.Polygon.LineString(aPg, bLS));
         },
         Polygon(aPg, bPg) {
             _.assert(false, "currently not supported");
@@ -602,28 +603,22 @@ _intersects = {
     },
     MultiPolygon: {
         Point(aMPg, bPt) {
-            _.assert(false, "currently not supported");
-            // TODO implement
+            return aMPg[$comp].some(aPg => _intersects.Polygon.Point(aPg, bPt));
         },
         MultiPoint(aMPg, bMPt) {
-            _.assert(false, "currently not supported");
-            // TODO implement
+            return aMPg[$comp].some(aPg => _intersects.Polygon.MultiPoint(aPg, bMPt));
         },
         LineString(aMPg, bLS) {
-            _.assert(false, "currently not supported");
-            // TODO implement
+            return aMPg[$comp].some(aPg => _intersects.Polygon.LineString(aPg, bLS));
         },
         MultiLineString(aMPg, bMLS) {
-            _.assert(false, "currently not supported");
-            // TODO implement
+            return aMPg[$comp].some(aPg => _intersects.Polygon.MultiLineString(aPg, bMLS));
         },
         Polygon(aMPg, bPg) {
-            _.assert(false, "currently not supported");
-            // TODO implement
+            return aMPg[$comp].some(aPg => _intersects.Polygon.Polygon(aPg, bPg));
         },
         MultiPolygon(aMPg, bMPg) {
-            _.assert(false, "currently not supported");
-            // TODO implement
+            return aMPg[$comp].some(aPg => _intersects.Polygon.MultiPolygon(aPg, bMPg));
         },
         GeometryCollection(aMPg, bGC) {
             return _intersects.GeometryCollection.MultiPolygon(bGC, aMPg);
@@ -1096,13 +1091,10 @@ _touches = {
 
 //#region Geometry Classes
 
-/** {@link https://geojson.org/ GeoJSON} */
-/** {@link https://tools.ietf.org/html/rfc7946 The GeoJSON Format} */
-
-/** {@link https://tools.ietf.org/html/rfc7946#section-3.1.1 Position} */
 class Position extends Vector {
 
     /**
+     * {@link https://tools.ietf.org/html/rfc7946#section-3.1.1 Position}
      * @param {Array<number>|Vector} pos 
      * @constructs Position
      * @private
@@ -1110,8 +1102,11 @@ class Position extends Vector {
     constructor(pos) {
         _.assert(pos instanceof Vector || (_.is.array(pos) && pos.every(_.is.number)), "not an array of numbers");
         _.assert(pos.length > 0, "too few entries");
+
         super(pos.length);
+        _.define(this, $bbox, [this, this]);
         _.define(this, $comp, [this]);
+
         for (let i = 0; i < this.length; i++) {
             this[i] = pos[i];
         }
@@ -1127,10 +1122,10 @@ class Position extends Vector {
 
 } // Position
 
-/** @description Added to make calculation with linestrings easier. */
 class Line extends Vector {
 
     /**
+     * Added to make calculation with linestrings easier.
      * @param {Position} start 
      * @param {Position} end 
      * @constructs Line
@@ -1140,8 +1135,14 @@ class Line extends Vector {
         _.assert(start instanceof Position && end instanceof Position, "not all positions");
         _.assert(start.length === end.length, "positions of different dimension");
         _.assert(!_equals.Position.Position(start, end), "line is too short");
+
         super(start.length);
+        _.define(this, $bbox, [
+            Vector.min(start, end),
+            Vector.max(start, end)
+        ].map(Position.from));
         _.define(this, $comp, [start, end]);
+
         for (let i = 0; i < this.length; i++) {
             this[i] = end[i] - start[i];
         }
@@ -1158,15 +1159,14 @@ class Line extends Vector {
 
 } // Line
 
-/** {@link https://tools.ietf.org/html/rfc7946#section-3.1 Geometry Object} */
 class Geometry {
 
     /**
+     * {@link https://tools.ietf.org/html/rfc7946#section-3.1 Geometry Object}
      * @param {Symbol} secret 
      * @param {...(Geometry|Position)} components
      * @constructs Geometry
      * @abstract
-     * @private
      */
     constructor(secret, ...components) {
         _.assert(new.target !== Geometry, "class is abstract");
@@ -1181,24 +1181,10 @@ class Geometry {
             _.define(this, "dimension", 0);
         }
 
-        // NOTE search for the bounding box could be more efficient
         _.define(this, $bbox, [
-            Vector.of(this.dimension, i => components.reduce(
-                (acc, val) => Math.min(acc,
-                    val instanceof Geometry ? val[$bbox][0][i]
-                        : val instanceof Line ? Math.min(val[$comp][0][i], val[$comp][1][i])
-                            : val[i]),
-                Infinity
-            )),
-            Vector.of(this.dimension, i => components.reduce(
-                (acc, val) => Math.max(acc,
-                    val instanceof Geometry ? val[$bbox][1][i]
-                        : val instanceof Line ? Math.max(val[$comp][0][i], val[$comp][1][i])
-                            : val[i]),
-                -Infinity
-            ))
+            Vector.min(...(components.map(val => val[$bbox][0]))),
+            Vector.max(...(components.map(val => val[$bbox][1])))
         ].map(Position.from));
-
         _.define(this, $comp, components);
     }
 
@@ -1350,11 +1336,11 @@ class Geometry {
 
 } // Geometry
 
-/** {@link https://tools.ietf.org/html/rfc7946#section-3.1.2 Point} */
-/** {@link https://tools.ietf.org/html/rfc7946#appendix-A.1 Points} */
 class Point extends Geometry {
 
     /**
+     * {@link https://tools.ietf.org/html/rfc7946#section-3.1.2 Point}
+     * {@link https://tools.ietf.org/html/rfc7946#appendix-A.1 Points}
      * @param {Position} pos 
      * @constructs Point 
      */
@@ -1386,11 +1372,11 @@ class Point extends Geometry {
 
 } // Point
 
-/** {@link https://tools.ietf.org/html/rfc7946#section-3.1.3 MultiPoint} */
-/** {@link https://tools.ietf.org/html/rfc7946#appendix-A.4 MultiPoints} */
 class MultiPoint extends Geometry {
 
     /**
+     * {@link https://tools.ietf.org/html/rfc7946#section-3.1.3 MultiPoint}
+     * {@link https://tools.ietf.org/html/rfc7946#appendix-A.4 MultiPoints}
      * @param  {...Point} pointArr 
      * @constructs MultiPoint
      */
@@ -1425,11 +1411,11 @@ class MultiPoint extends Geometry {
 
 } // MultiPoint
 
-/** {@link https://tools.ietf.org/html/rfc7946#section-3.1.4 LineString} */
-/** {@link https://tools.ietf.org/html/rfc7946#appendix-A.2 LineStrings} */
 class LineString extends Geometry {
 
     /**
+     * {@link https://tools.ietf.org/html/rfc7946#section-3.1.4 LineString}
+     * {@link https://tools.ietf.org/html/rfc7946#appendix-A.2 LineStrings}
      * @param  {...Line} lineArr 
      * @constructs LineString
      */
@@ -1468,11 +1454,11 @@ class LineString extends Geometry {
 
 } // LineString
 
-/** {@link https://tools.ietf.org/html/rfc7946#section-3.1.5 MultiLineString} */
-/** {@link https://tools.ietf.org/html/rfc7946#appendix-A.5 MultiLineStrings} */
 class MultiLineString extends Geometry {
 
     /**
+     * {@link https://tools.ietf.org/html/rfc7946#section-3.1.5 MultiLineString}
+     * {@link https://tools.ietf.org/html/rfc7946#appendix-A.5 MultiLineStrings}
      * @param  {...LineString} lineStrArr 
      * @constructs MultiLineString
      */
@@ -1507,10 +1493,10 @@ class MultiLineString extends Geometry {
 
 } // MultiLineString
 
-/** @description Added to externalize linearring requirements for polygons. */
 class LinearRing extends LineString {
 
     /**
+     * Added to externalize linearring requirements for polygons.
      * @param  {...Line} lineArr 
      * @constructs LinearRing
      * @private
@@ -1540,17 +1526,18 @@ class LinearRing extends LineString {
 
 } // LinearRing
 
-/** {@link https://tools.ietf.org/html/rfc7946#section-3.1.6 Polygon} */
-/** {@link https://tools.ietf.org/html/rfc7946#appendix-A.3 Polygons} */
 class Polygon extends Geometry {
 
     /**
+     * {@link https://tools.ietf.org/html/rfc7946#section-3.1.6 Polygon}
+     * {@link https://tools.ietf.org/html/rfc7946#appendix-A.3 Polygons}
      * @param  {...LinearRing} ringArr 
      * @constructs Polygon
      */
     constructor(...ringArr) {
         _.assert(ringArr.every(ring => ring instanceof LinearRing), "not all linearrings");
         _.assert(ringArr.length > 0, "too few linearrings");
+        // NOTE could also check, if linearrings are self-intersecting
         super($secret, ...ringArr);
     }
 
@@ -1579,11 +1566,11 @@ class Polygon extends Geometry {
 
 } // Polygon
 
-/** {@link https://tools.ietf.org/html/rfc7946#section-3.1.7 MultiPolygon} */
-/** {@link https://tools.ietf.org/html/rfc7946#appendix-A.6 MultiPolygons} */
 class MultiPolygon extends Geometry {
 
     /**
+     * {@link https://tools.ietf.org/html/rfc7946#section-3.1.7 MultiPolygon}
+     * {@link https://tools.ietf.org/html/rfc7946#appendix-A.6 MultiPolygons}
      * @param  {...Polygon} polyArr 
      * @constructs MultiPolygon
      */
@@ -1618,11 +1605,11 @@ class MultiPolygon extends Geometry {
 
 } // MultiPolygon
 
-/** {@link https://tools.ietf.org/html/rfc7946#section-3.1.8 GeometryCollection} */
-/** {@link https://tools.ietf.org/html/rfc7946#appendix-A.7 GeometryCollections} */
 class GeometryCollection extends Geometry {
 
     /**
+     * {@link https://tools.ietf.org/html/rfc7946#section-3.1.8 GeometryCollection}
+     * {@link https://tools.ietf.org/html/rfc7946#appendix-A.7 GeometryCollections}
      * @param  {...(Geometry)} geomArr 
      * @constructs GeometryCollection
      */

@@ -7,16 +7,16 @@ class Matrix extends Float64Array {
     /**
      * Constructs a matrix of given dimensions.
      * Entries are stored as one array, with the rows concatenated.
-     * @param {number} rows 
-     * @param {number} cols 
+     * @param {number} [rows=1] 
+     * @param {number} [cols=1] 
      * @constructs Matrix
      * @extends Float64Array
      */
-    constructor(rows, cols) {
+    constructor(rows = 1, cols = 1) {
         rows = parseInt(rows);
-        _.assert(_.is.number(rows) && rows > 0, "invalid rows");
+        _.assert(_.is.number(rows) && rows > 0 && rows < Infinity && Math.trunc(rows) === rows, "invalid rows");
         cols = parseInt(cols);
-        _.assert(_.is.number(cols) && cols > 0, "invalid columns");
+        _.assert(_.is.number(cols) && cols > 0 && cols < Infinity && Math.trunc(cols) === cols, "invalid columns");
         super(rows * cols);
         _.define(this, "rows", rows);
         _.define(this, "cols", cols);
@@ -104,6 +104,10 @@ class Matrix extends Float64Array {
             }
             return res;
         }
+    }
+
+    static get [Symbol.species]() {
+        return Matrix;
     }
 
     /**

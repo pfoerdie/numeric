@@ -4,11 +4,11 @@ class Vector extends Float64Array {
 
     /**
      * Constructs a vector of given length.
-     * @param {number} len 
+     * @param {number} [len=1] 
      * @constructs Vector
      * @extends Float64Array
      */
-    constructor(len) {
+    constructor(len = 1) {
         len = parseInt(len);
         _.assert(_.is.number(len) && len > 0 && len < Infinity && Math.trunc(len) === len, "invalid length");
         super(len);
@@ -149,6 +149,10 @@ class Vector extends Float64Array {
             res[i] = arr[i];
         }
         return res;
+    }
+
+    static get [Symbol.species]() {
+        return Vector;
     }
 
     /**

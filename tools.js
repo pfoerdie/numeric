@@ -1,3 +1,8 @@
+exports.set = function (obj, key, value) {
+    let enumerable = true, writable = true;
+    Object.defineProperty(obj, key, { value, enumerable, writable });
+};
+
 exports.define = function (obj, key, value, get, set) {
     Object.defineProperty(obj, key, (get || set) ? { get, set } : { value });
 };

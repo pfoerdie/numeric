@@ -34,6 +34,11 @@ class Tensor extends Float64Array {
         return size.slice(0);
     }
 
+    get dim() {
+        let { [$size]: size } = this;
+        return size.length;
+    }
+
     getIndex(...pos) {
         let { [$size]: size } = this;
         _.assert(pos.length === size.length, "The position must have the same dimension as the tensors.");

@@ -4,7 +4,7 @@
 
 const _ = require("./tools.js");
 const _lookupMap = new Map();
-const $size = Symbol(), $type = Symbol();
+const $size = Symbol(), $type = Symbol(), $constructor = Symbol();
 
 function _getLookup(tensor) {
     _.assert(tensor instanceof Tensor, "Illegal request for non tensor lookup.");
@@ -20,12 +20,13 @@ class Tensor extends Float64Array {
 
     constructor(...size) {
         _.assert(size.length > 0, "The size is not defined.");
+        _.assert(size.every(val => val > 0 && val < 4294967296), "The size must be a number larger than 0 and less than 4294967296.");
         size = Uint32Array.from(size);
-        _.assert(size.every(val => val > 0 && val < 4294967296), "The size must be larger than 0 and less than 4294967296.");
         let length = size.reduce((acc, val) => acc * val, 1);
         super(length);
         _.define(this, $type, size.toString());
         _.define(this, $size, size);
+        _.define(this, $constructor, new.target);
         _getLookup(this);
     }
 
@@ -73,25 +74,19 @@ class Tensor extends Float64Array {
         return pos;
     }
 
-    toJSON() {
-        // let res = [];
-    }
-
     toString() {
-        let { [$size]: size } = this;
-        return `Tensor<${size.join(", ")}> [ ${this.join(", ")} ]`;
+        let { [$size]: size, [$constructor]: constructor } = this;
+        return `${constructor.name}<${size.join(", ")}> [ ${this.join(", ")} ]`;
     }
 
-    // static from(json) {
-    //     // _.assert(arr instanceof Vector || (Array.isArray(arr) && arr.every(_.is.number)), "no vector array");
-    //     // _.assert(arr.length > 0, "to few entries");
-    //     // let len = arr.length;
-    //     // let res = Vector.of(len);
-    //     // for (let i = 0; i < len; i++) {
-    //     //     res[i] = arr[i];
-    //     // }
-    //     // return res;
-    // }
+    static from(arrayLike, size, mapFn, thisArg) {
+        // TODO rethink and rework <- what do you want to accomplish with that in reality?
+        let values = arrayLike.length > 0 ? arrayLike : Array.from(arrayLike);
+        if (!size) size = values instanceof Tensor ? values.size : [values.length];
+        let result = new this(...size); // NOTE <- this <- Tensor
+        values.forEach((value, index) => result[index] = value);
+        return result;
+    }
 
     static get [Symbol.species]() {
         return Tensor;

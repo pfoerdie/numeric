@@ -25,37 +25,59 @@ class Tensor extends Float64Array {
 
     // TODO all TypedArray.prototype methods must be overriden with custom indexing
     // https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/Float64Array
-    get copyWithin() { return undefined; } // NOTE disabled
-    // get entries() { return undefined; }
-    // get every() { return undefined; }
-    // get fill() { return undefined; }
-    // get find() { return undefined; }
-    get findIndex() { return undefined; } // NOTE disabled
-    // get filter() { return undefined; }
-    // get forEach() { return undefined; }
-    // get includes() { return undefined; }
-    get indexOf() { return undefined; } // NOTE disabled
-    // get join() { return undefined; }
-    // get keys() { return undefined; }
-    get lastIndexOf() { return undefined; } // NOTE disabled
-    // get map() { return undefined; } // NOTE implemented
-    // get reduce() { return undefined; }
-    // get reduceRight() { return undefined; }
-    get reverse() { return undefined; } // NOTE disabled
-    get set() { return undefined; } // disabled
-    // get slice() { return undefined; }
-    // get some() { return undefined; }
-    get sort() { return undefined; } // NOTE disabled
-    get subarray() { return undefined; } // NOTE disabled
-    // get toLocaleString() { return undefined; }
-    // get toString() { return undefined; }
-    // get values() { return undefined; }
-    // get [Symbol.iterator]() { return undefined; }
-    // static get of() { return undefined; } // NOTE implemented
-    // static get from() { return undefined; } // NOTE implemented
-    // static get [Symbol.species]() { return undefined; } // NOTE implemented
+    get copyWithin() { } // NOTE disabled
+    get entries() { } // NOTE disabled
+    // every() { } // NOTE implemented
+    // fill() { }
+    // find() { }
+    get findIndex() { } // NOTE disabled
+    // filter() { }
+    // forEach() { } // NOTE implemented
+    // includes() { }
+    get indexOf() { } // NOTE disabled
+    // join() { }
+    get keys() { } // NOTE disabled
+    get lastIndexOf() { } // NOTE disabled
+    // map() { } // NOTE implemented
+    // reduce() { }
+    // reduceRight() { }
+    get reverse() { } // NOTE disabled
+    get set() { } // disabled
+    // slice() { }
+    // some() { } // NOTE implemented
+    get sort() { } // NOTE disabled
+    get subarray() { } // NOTE disabled
+    // toLocaleString() { }
+    // toString() { }
+    get values() { } // NOTE disabled
+    // [Symbol.iterator]() { } // NOTE inherited
+    // static of() { } // NOTE implemented
+    // static from() { } // NOTE implemented
+    // static get [Symbol.species]() { } // NOTE implemented
 
     //#endregion
+
+    forEach(callback) {
+        assert(typeof callback === "function", "The callback is not a function.");
+        const dim = this.size.length;
+        const indices = (new Array(dim)).fill(0);
+        let index = 0, pos = dim - 1;
+        while (pos >= 0) {
+            if (indices[pos] === this.size[pos] - 1) {
+                pos--;
+            } else {
+                callback(this[index], ...indices);
+                index++;
+                indices[pos]++;
+                while (pos < dim - 1) {
+                    pos++;
+                    indices[pos] = 0;
+                }
+            }
+        }
+        callback(this[index], ...indices);
+        assert(index === this.length - 1);
+    }
 
     map(callback) {
         assert(typeof callback === "function", "The callback is not a function.");
@@ -77,8 +99,54 @@ class Tensor extends Float64Array {
             }
         }
         result[index] = callback(this[index], ...indices);
-        assert(index === this.length - 1, "Unknown Error");
+        assert(index === this.length - 1);
         return result;
+    }
+
+    every(callback) {
+        assert(typeof callback === "function", "The callback is not a function.");
+        const dim = this.size.length;
+        const indices = (new Array(dim)).fill(0);
+        let index = 0, pos = dim - 1;
+        while (pos >= 0) {
+            if (indices[pos] === this.size[pos] - 1) {
+                pos--;
+            } else {
+                if (!callback(this[index], ...indices)) return false;
+                index++;
+                indices[pos]++;
+                while (pos < dim - 1) {
+                    pos++;
+                    indices[pos] = 0;
+                }
+            }
+        }
+        if (!callback(this[index], ...indices)) return false;
+        assert(index === this.length - 1);
+        return true;
+    }
+
+    some(callback) {
+        assert(typeof callback === "function", "The callback is not a function.");
+        const dim = this.size.length;
+        const indices = (new Array(dim)).fill(0);
+        let index = 0, pos = dim - 1;
+        while (pos >= 0) {
+            if (indices[pos] === this.size[pos] - 1) {
+                pos--;
+            } else {
+                if (callback(this[index], ...indices)) return true;
+                index++;
+                indices[pos]++;
+                while (pos < dim - 1) {
+                    pos++;
+                    indices[pos] = 0;
+                }
+            }
+        }
+        if (callback(this[index], ...indices)) return true;
+        assert(index === this.length - 1);
+        return false;
     }
 
     toJSON() {

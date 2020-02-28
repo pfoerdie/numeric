@@ -105,6 +105,29 @@ class Tensor extends Float64Array {
     }
 
     /**
+     * @returns {Iterator<[...number]>}
+     */
+    * indices() {
+        const indices = (new Array(this.order)).fill(0);
+        let index = 0, pos = this.order - 1;
+        while (pos >= 0) {
+            if (indices[pos] === this.size[pos] - 1) {
+                pos--;
+            } else {
+                yield [...indices];
+                index++;
+                indices[pos]++;
+                while (pos < this.order - 1) {
+                    pos++;
+                    indices[pos] = 0;
+                }
+            }
+        }
+        yield [...indices];
+        assert(index === this.length - 1, "The number of iterations does not match the length of the tensor.");
+    }
+
+    /**
      * @typedef {function} Tensor~Callback
      * @param {number} value 
      * @param {Array<number>} indices 

@@ -1,87 +1,89 @@
 const assert = require("assert");
 const _sizeCache = new Map();
 
+/** INFO TypedArray Prototypes
+ * 
+ * {@link https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/Float64Array Float64Array}
+ * 
+ * TODO all TypedArray.prototype methods must be overriden with custom indexing:
+ * - copyWithin( target, start[, end = this.length] )
+ * - fill( value[, start = 0[, end = this.length]] )
+ * - find( callback[, thisArg] )
+ * - findIndex( callback[, thisArg] )
+ * - filter( callback[, thisArg] )
+ * - includes( searchElement[, fromIndex] )
+ * - indexOf( searchElement[, fromIndex = 0] )
+ * - join( [separator = ','] )
+ * - lastIndexOf( searchElement[, fromIndex = typedarray.length] )
+ * - reduce( callback[, initialValue] )
+ * - reduceRight( callback[, initialValue] )
+ * - set( typedarray[, offset] )
+ * - slice( [begin[, end]] )
+ * - sort( [compareFunction] )
+ * 
+ * NOTE inherited:
+ * - * keys( )
+ * - * values( )
+ * - reverse( )
+ * - subarray( )
+ * - toLocaleString( )
+ * - toString( )
+ * - [Symbol.iterator]( )
+ * 
+ * NOTE implemented:
+ * -  * entries( )
+ * - every( callback[, thisArg] )
+ * - forEach( callback[, thisArg] )
+ * - map( callback[, thisArg] )
+ * - some( callback[, thisArg] )
+ * - static of( element0[, element1[, ...[, elementN]]] )
+ * - static from( source[, mapFn[, thisArg]] )
+ * - static get [Symbol.species]( )
+ * 
+ */
+
 class Tensor extends Float64Array {
 
+    /**
+     * @param  {...number} size 
+     * @constructs Tensor
+     * @extends Float64Array
+     */
     constructor(...size) {
         assert(size.length > 0, "The size is not defined.");
-        assert(size.every(val => val > 0 && val < 4294967296 && val === parseInt(val)), "The size must be an integer larger than 0 and less than 4294967296.");
+        assert(size.every(val => val > 0 && val === parseInt(val)), "The size must be an integer larger than 0.");
         const length = size.reduce((acc, val) => acc * val, 1);
         super(length);
         Object.defineProperty(this, "type", { value: size.toString() });
         let cache = _sizeCache.get(this.type);
         if (!cache) {
             cache = {
+                length,
                 size: Object.freeze(size),
                 indexOffset: Object.freeze(_calcIndexOffset(size))
             };
             _sizeCache.set(this.type, cache)
         }
+        assert(length === cache.length, "Unknown Error! Tensors of the same type should always have the same length.");
         Object.defineProperty(this, "size", { value: cache.size });
         Object.defineProperty(this, "indexOffset", { value: cache.indexOffset });
     }
 
-    //#region TypedArray Prototypes
-
-    // TODO all TypedArray.prototype methods must be overriden with custom indexing
-    // https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/Float64Array
-    get copyWithin() { } // NOTE disabled
-    get entries() { } // NOTE disabled
-    // every() { } // NOTE implemented
-    // fill() { }
-    // find() { }
-    get findIndex() { } // NOTE disabled
-    // filter() { }
-    // forEach() { } // NOTE implemented
-    // includes() { }
-    get indexOf() { } // NOTE disabled
-    // join() { }
-    get keys() { } // NOTE disabled
-    get lastIndexOf() { } // NOTE disabled
-    // map() { } // NOTE implemented
-    // reduce() { }
-    // reduceRight() { }
-    get reverse() { } // NOTE disabled
-    get set() { } // disabled
-    // slice() { }
-    // some() { } // NOTE implemented
-    get sort() { } // NOTE disabled
-    get subarray() { } // NOTE disabled
-    // toLocaleString() { }
-    // toString() { }
-    get values() { } // NOTE disabled
-    // [Symbol.iterator]() { } // NOTE inherited
-    // static of() { } // NOTE implemented
-    // static from() { } // NOTE implemented
-    // static get [Symbol.species]() { } // NOTE implemented
-
-    //#endregion
-
-    forEach(callback) {
-        assert(typeof callback === "function", "The callback is not a function.");
-        const dim = this.size.length;
-        const indices = (new Array(dim)).fill(0);
-        let index = 0, pos = dim - 1;
-        while (pos >= 0) {
-            if (indices[pos] === this.size[pos] - 1) {
-                pos--;
-            } else {
-                callback(this[index], ...indices);
-                index++;
-                indices[pos]++;
-                while (pos < dim - 1) {
-                    pos++;
-                    indices[pos] = 0;
-                }
+    add(...tensors) {
+        assert(tensors.every(tensor => tensor instanceof Tensor && tensor.type === this.type), "For addition, all arguments must be tensors of the same size.");
+        for (let tensor of tensors) {
+            for (let i = 0; i < this.length; i++) {
+                this[i] += tensor[i];
             }
         }
-        callback(this[index], ...indices);
-        assert(index === this.length - 1);
+        return this;
     }
 
-    map(callback) {
-        assert(typeof callback === "function", "The callback is not a function.");
-        const result = new Tensor(...this.size);
+    /**
+     * @returns {Iterator<[number, number, ...number]>}
+     * @override
+     */
+    * entries() {
         const dim = this.size.length;
         const indices = (new Array(dim)).fill(0);
         let index = 0, pos = dim - 1;
@@ -89,7 +91,7 @@ class Tensor extends Float64Array {
             if (indices[pos] === this.size[pos] - 1) {
                 pos--;
             } else {
-                result[index] = callback(this[index], ...indices);
+                yield [index, this[index], ...indices];
                 index++;
                 indices[pos]++;
                 while (pos < dim - 1) {
@@ -98,65 +100,94 @@ class Tensor extends Float64Array {
                 }
             }
         }
-        result[index] = callback(this[index], ...indices);
-        assert(index === this.length - 1);
+        yield [index, this[index], ...indices];
+        assert(index === this.length - 1, "The number of iterations does not match the length of the tensor.");
+    }
+
+    /**
+     * @typedef {function} Tensor~Callback
+     * @param {number} value 
+     * @param {Array<number>} indices 
+     * @param {number} index 
+     * @param {Tensor} tensor
+     */
+
+    /**
+     * @param {Tensor~Callback} callback 
+     * @param {*} [thisArg] 
+     * @returns {Tensor} 
+     * @override
+     */
+    forEach(callback, thisArg) {
+        assert(typeof callback === "function", "The callback is not a function.");
+        for (let [index, value, ...indices] of this.entries()) {
+            callback.call(thisArg, value, indices, index, this);
+        }
+        return this;
+    }
+
+    /**
+     * @param {Tensor~Callback} callback 
+     * @param {*} [thisArg] 
+     * @returns {Tensor} 
+     * @override
+     */
+    map(callback, thisArg) {
+        assert(typeof callback === "function", "The callback is not a function.");
+        const result = new Tensor(...this.size);
+        for (let [index, value, ...indices] of this.entries()) {
+            result[index] = callback.call(thisArg, value, indices, index, this);
+        }
         return result;
     }
 
-    every(callback) {
+    /**
+     * @param {Tensor~Callback} callback 
+     * @param {*} [thisArg] 
+     * @returns {boolean} 
+     * @override
+     */
+    every(callback, thisArg) {
         assert(typeof callback === "function", "The callback is not a function.");
-        const dim = this.size.length;
-        const indices = (new Array(dim)).fill(0);
-        let index = 0, pos = dim - 1;
-        while (pos >= 0) {
-            if (indices[pos] === this.size[pos] - 1) {
-                pos--;
-            } else {
-                if (!callback(this[index], ...indices)) return false;
-                index++;
-                indices[pos]++;
-                while (pos < dim - 1) {
-                    pos++;
-                    indices[pos] = 0;
-                }
-            }
+        for (let [index, value, ...indices] of this.entries()) {
+            if (!callback.call(thisArg, value, indices, index, this))
+                return false;
         }
-        if (!callback(this[index], ...indices)) return false;
-        assert(index === this.length - 1);
         return true;
     }
 
-    some(callback) {
+    /**
+     * @param {Tensor~Callback} callback 
+     * @param {*} [thisArg] 
+     * @returns {boolean} 
+     * @override
+     */
+    some(callback, thisArg) {
         assert(typeof callback === "function", "The callback is not a function.");
-        const dim = this.size.length;
-        const indices = (new Array(dim)).fill(0);
-        let index = 0, pos = dim - 1;
-        while (pos >= 0) {
-            if (indices[pos] === this.size[pos] - 1) {
-                pos--;
-            } else {
-                if (callback(this[index], ...indices)) return true;
-                index++;
-                indices[pos]++;
-                while (pos < dim - 1) {
-                    pos++;
-                    indices[pos] = 0;
-                }
-            }
+        for (let [index, value, ...indices] of this.entries()) {
+            if (callback.call(thisArg, value, indices, index, this))
+                return true;
         }
-        if (callback(this[index], ...indices)) return true;
-        assert(index === this.length - 1);
         return false;
     }
 
+    /**
+     * @typedef {Array<number|Tensor~JSON>} Tensor~JSON
+     */
+
+    /**
+     * @returns {Tensor~JSON}
+     */
     toJSON() {
         // TODO
     }
 
-    static of(...arr) {
-        return Tensor.from(arr);
-    }
-
+    /**
+     * @param {Tensor|Tensor~JSON} arr
+     * @returns {Tensor} 
+     * @static
+     * @override
+     */
     static from(arr) {
         if (arr instanceof Tensor) {
             const result = new Tensor(...arr.size);
@@ -169,6 +200,21 @@ class Tensor extends Float64Array {
         }
     }
 
+    /**
+     * @param {...number|Tensor~JSON} arr
+     * @returns {Tensor} 
+     * @static
+     * @override
+     */
+    static of(...arr) {
+        return Tensor.from(arr);
+    }
+
+    /**
+     * @type {class<Float64Array>}
+     * @static
+     * @override
+     */
     static get [Symbol.species]() {
         // NOTE this targets all prototypes that the tensor does not override
         return Float64Array;

@@ -54,6 +54,7 @@ class Tensor extends Float64Array {
         assert(size.every(val => val > 0 && val === parseInt(val)), "The size must be an integer larger than 0.");
         const length = size.reduce((acc, val) => acc * val, 1);
         super(length);
+        Object.defineProperty(this, "order", { value: size.length });
         Object.defineProperty(this, "type", { value: size.toString() });
         let cache = _sizeCache.get(this.type);
         if (!cache) {
@@ -84,9 +85,8 @@ class Tensor extends Float64Array {
      * @override
      */
     * entries() {
-        const dim = this.size.length;
-        const indices = (new Array(dim)).fill(0);
-        let index = 0, pos = dim - 1;
+        const indices = (new Array(this.order)).fill(0);
+        let index = 0, pos = this.order - 1;
         while (pos >= 0) {
             if (indices[pos] === this.size[pos] - 1) {
                 pos--;
@@ -94,7 +94,7 @@ class Tensor extends Float64Array {
                 yield [index, this[index], ...indices];
                 index++;
                 indices[pos]++;
-                while (pos < dim - 1) {
+                while (pos < this.order - 1) {
                     pos++;
                     indices[pos] = 0;
                 }

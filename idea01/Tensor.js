@@ -70,8 +70,24 @@ class Tensor extends Float64Array {
         Object.defineProperty(this, "indexOffset", { value: cache.indexOffset });
     }
 
+    /**
+     * @returns {Tensor}
+     */
+    clone() {
+        const result = new Tensor(...this.size);
+        for (let i = 0; i < this.length; i++) {
+            result[i] = this[i];
+        }
+        return result;
+    }
+
+    /**
+     * @param  {...Tensor} tensors 
+     * @returns {this}
+     */
     add(...tensors) {
-        assert(tensors.every(tensor => tensor instanceof Tensor && tensor.type === this.type), "For addition, all arguments must be tensors of the same size.");
+        assert(tensors.every(tensor => tensor instanceof Tensor && tensor.type === this.type),
+            "For entrywise addition, all arguments must be tensors of the same size.");
         for (let tensor of tensors) {
             for (let i = 0; i < this.length; i++) {
                 this[i] += tensor[i];
@@ -81,8 +97,54 @@ class Tensor extends Float64Array {
     }
 
     /**
+     * @param  {...Tensor} tensors 
+     * @returns {this}
+     */
+    subtract(...tensors) {
+        assert(tensors.every(tensor => tensor instanceof Tensor && tensor.type === this.type),
+            "For entrywise subtraction, all arguments must be tensors of the same size.");
+        for (let tensor of tensors) {
+            for (let i = 0; i < this.length; i++) {
+                this[i] -= tensor[i];
+            }
+        }
+        return this;
+    }
+
+    /**
+     * @param  {...Tensor} tensors 
+     * @returns {this}
+     */
+    hadMultiply(...tensors) {
+        assert(tensors.every(tensor => tensor instanceof Tensor && tensor.type === this.type),
+            "For entrywise multiplication, all arguments must be tensors of the same size.");
+        for (let tensor of tensors) {
+            for (let i = 0; i < this.length; i++) {
+                this[i] *= tensor[i];
+            }
+        }
+        return this;
+    }
+
+    /**
+     * @param  {...Tensor} tensors 
+     * @returns {this}
+     */
+    hadDevide(...tensors) {
+        assert(tensors.every(tensor => tensor instanceof Tensor && tensor.type === this.type),
+            "For entrywise devision, all arguments must be tensors of the same size.");
+        for (let tensor of tensors) {
+            for (let i = 0; i < this.length; i++) {
+                this[i] /= tensor[i];
+            }
+        }
+        return this;
+    }
+
+    /**
      * @returns {Iterator<[number, number, ...number]>}
      * @override
+     * @generator
      */
     * entries() {
         const indices = (new Array(this.order)).fill(0);
@@ -106,6 +168,7 @@ class Tensor extends Float64Array {
 
     /**
      * @returns {Iterator<[...number]>}
+     * @generator
      */
     * indices() {
         const indices = (new Array(this.order)).fill(0);
@@ -138,7 +201,7 @@ class Tensor extends Float64Array {
     /**
      * @param {Tensor~Callback} callback 
      * @param {*} [thisArg] 
-     * @returns {Tensor} 
+     * @returns {this} 
      * @override
      */
     forEach(callback, thisArg) {
@@ -247,6 +310,11 @@ class Tensor extends Float64Array {
 
 module.exports = Tensor;
 
+/**
+ * @param {Array<number>} size 
+ * @returns {Array<number>}
+ * @private
+ */
 function _calcIndexOffset(size) {
     const indexOffset = new Array(size.length);
     for (let i = 0; i < size.length; i++) {

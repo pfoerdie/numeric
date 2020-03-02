@@ -331,11 +331,11 @@ class Tensor extends Float64Array {
     }
 
     toString() {
-        return `Tensor <${this.size}> [${super.toString()}]`;
+        return `Tensor <${this.size.toString()}> [${super.toString()}]`;
     }
 
     toLocaleString() {
-        return `Tensor <${this.size}> [${super.toLocaleString()}]`;
+        return `Tensor <${this.size.toLocaleString()}> [${super.toLocaleString()}]`;
     }
 
     /**

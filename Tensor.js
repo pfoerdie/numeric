@@ -98,12 +98,13 @@ class Tensor extends Float64Array {
     add(...tensors) {
         assert(tensors.every(tensor => tensor instanceof Tensor && tensor.size === this.size),
             "For entrywise addition, all arguments must be tensors of the same size.");
+        const result = this.clone();
         for (let tensor of tensors) {
-            for (let i = 0; i < this.length; i++) {
-                this[i] += tensor[i];
+            for (let i = 0; i < result.length; i++) {
+                result[i] += tensor[i];
             }
         }
-        return this;
+        return result;
     }
 
     /**
@@ -113,12 +114,13 @@ class Tensor extends Float64Array {
     subtract(...tensors) {
         assert(tensors.every(tensor => tensor instanceof Tensor && tensor.size === this.size),
             "For entrywise subtraction, all arguments must be tensors of the same size.");
+        const result = this.clone();
         for (let tensor of tensors) {
-            for (let i = 0; i < this.length; i++) {
-                this[i] -= tensor[i];
+            for (let i = 0; i < result.length; i++) {
+                result[i] -= tensor[i];
             }
         }
-        return this;
+        return result;
     }
 
     /**
@@ -128,12 +130,13 @@ class Tensor extends Float64Array {
     hadMultiply(...tensors) {
         assert(tensors.every(tensor => tensor instanceof Tensor && tensor.size === this.size),
             "For entrywise multiplication, all arguments must be tensors of the same size.");
+        const result = this.clone();
         for (let tensor of tensors) {
-            for (let i = 0; i < this.length; i++) {
-                this[i] *= tensor[i];
+            for (let i = 0; i < result.length; i++) {
+                result[i] *= tensor[i];
             }
         }
-        return this;
+        return result;
     }
 
     /**
@@ -143,55 +146,54 @@ class Tensor extends Float64Array {
     hadDevide(...tensors) {
         assert(tensors.every(tensor => tensor instanceof Tensor && tensor.size === this.size),
             "For entrywise devision, all arguments must be tensors of the same size.");
+        const result = this.clone();
         for (let tensor of tensors) {
-            for (let i = 0; i < this.length; i++) {
-                this[i] /= tensor[i];
+            for (let i = 0; i < result.length; i++) {
+                result[i] /= tensor[i];
             }
         }
-        return this;
+        return result;
     }
 
     /**
-     * @param {Tensor} tensor 
      * @param {number|Tensor} factor 
-     * @param {number} [depth=1] 
+     * @param {number} [degree=1] 
      * @returns {Tensor|number}
      */
-    static product(tensor, factor, depth = 1) {
-        assert(tensor instanceof Tensor, "The product can only be done with a tensor.");
-        assert(depth > 0 && depth === parseInt(depth), "The depth must be an integer larger than 0.");
+    multiply(factor, degree = 1) {
+        assert(degree > 0 && degree === parseInt(degree), "The degree must be an integer larger than 0.");
         if (typeof factor === "number") {
-            assert(depth === 1, "The depth for scalar product must be 1.");
-            const result = new Tensor(...tensor.size);
-            for (let i = 0; i < tensor.length; i++) {
-                result[i] = tensor[i] * factor;
+            assert(degree === 1, "The degree for scalar multiplication must be 1.");
+            const result = new Tensor(...this.size);
+            for (let i = 0; i < this.length; i++) {
+                result[i] = this[i] * factor;
             }
             return result;
         } else {
-            assert(factor instanceof Tensor, "The factor for the product must be a number or a tensor.");
-            assert(tensor.order >= depth && factor.order >= depth,
-                "The order of tensor and factor must be larger or equal to the depth for the product.");
-            for (let k = 1; k <= depth; k++) {
-                assert(tensor.size[tensor.order - k] === factor.size[depth - k],
-                    "For a product of given depth, that last part of the tensors size must match the first part of the factors size.");
+            assert(factor instanceof Tensor, "The factor for the multiplication must be a number or a tensor.");
+            assert(this.order >= degree && factor.order >= degree,
+                "The order of this and the factor must be larger or equal to the degree of the multiplication.");
+            for (let k = 1; k <= degree; k++) {
+                assert(this.size[this.order - k] === factor.size[degree - k],
+                    "For a multiplication of given degree, that last part of the tensors size must match the first part of the factors size.");
             }
-            if (tensor.order === depth && factor.order === depth) {
+            if (this.order === degree && factor.order === degree) {
                 let result = 0;
-                for (let i = 0; i < tensor.length; i++) {
-                    result += tensor[i] * factor[i];
+                for (let i = 0; i < this.length; i++) {
+                    result += this[i] * factor[i];
                 }
                 return result;
             } else {
-                const result = new Tensor(...tensor.size.slice(0, -depth), ...factor.size.slice(depth));
-                for (let [t_index, t_value, ...t_indices] of tensor.entries()) {
+                const result = new Tensor(...this.size.slice(0, -degree), ...factor.size.slice(degree));
+                for (let [t_index, t_value, ...t_indices] of this.entries()) {
                     factorCheck: for (let [f_index, f_value, ...f_indices] of factor.entries()) {
                         // NOTE This is not efficient and the algorithm should be rewritten, so it does not need 
                         //      the following check and iterate unnecessarily over those indices. 
-                        for (let k = 1; k <= depth; k++) {
-                            if (t_indices[t_indices.length - k] !== f_indices[depth - k])
+                        for (let k = 1; k <= degree; k++) {
+                            if (t_indices[t_indices.length - k] !== f_indices[degree - k])
                                 continue factorCheck;
                         }
-                        const indices = [...t_indices.slice(0, -depth), ...f_indices.slice(depth)];
+                        const indices = [...t_indices.slice(0, -degree), ...f_indices.slice(degree)];
                         const index = _calcIndex(indices, result.offset);
                         result[index] += t_value * f_value;
                     }

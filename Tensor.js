@@ -1,97 +1,411 @@
-/**
- * @module Numeric.Tensor
+const assert = require("assert");
+const _sizeCache = new Map();
+
+/** INFO TypedArray Prototypes
+ * 
+ * {@link https://developer.mozilla.org/de/docs/Web/JavaScript/Reference/Global_Objects/Float64Array Float64Array}
+ * 
+ * TODO all TypedArray.prototype methods must be overriden with custom indexing:
+ * - copyWithin( target, start[, end = this.length] )
+ * - fill( value[, start = 0[, end = this.length]] )
+ * - find( callback[, thisArg] )
+ * - findIndex( callback[, thisArg] )
+ * - filter( callback[, thisArg] )
+ * - includes( searchElement[, fromIndex] )
+ * - indexOf( searchElement[, fromIndex = 0] )
+ * - join( [separator = ','] )
+ * - lastIndexOf( searchElement[, fromIndex = typedarray.length] )
+ * - reduce( callback[, initialValue] )
+ * - reduceRight( callback[, initialValue] )
+ * - set( typedarray[, offset] )
+ * - slice( [begin[, end]] )
+ * - sort( [compareFunction] )
+ * 
+ * NOTE inherited:
+ * - * keys( )
+ * - * values( )
+ * - reverse( )
+ * - subarray( )
+ * - toLocaleString( )
+ * - toString( )
+ * - [Symbol.iterator]( )
+ * 
+ * NOTE implemented:
+ * -  * entries( )
+ * - every( callback[, thisArg] )
+ * - forEach( callback[, thisArg] )
+ * - map( callback[, thisArg] )
+ * - some( callback[, thisArg] )
+ * - static of( element0[, element1[, ...[, elementN]]] )
+ * - static from( source[, mapFn[, thisArg]] )
+ * - static get [Symbol.species]( )
+ * 
  */
-
-const _ = require("./tools.js");
-const _lookupMap = new Map();
-const $size = Symbol(), $type = Symbol(), $constructor = Symbol();
-
-function _getLookup(tensor) {
-    _.assert(tensor instanceof Tensor, "Illegal request for non tensor lookup.");
-    let { [$size]: size, [$type]: key } = tensor;
-    if (_lookupMap.has(key)) return _lookupMap.get(key);
-    let indexFactor = size.map((val, i) => size.slice(i + 1).reduce((acc, val) => acc * val, 1));
-    let lookup = { indexFactor };
-    _lookupMap.set(key, lookup);
-    return lookup;
-}
 
 class Tensor extends Float64Array {
 
+    /**
+     * @param  {...number} size 
+     * @constructs Tensor
+     * @extends Float64Array
+     */
     constructor(...size) {
-        _.assert(size.length > 0, "The size is not defined.");
-        _.assert(size.every(val => val > 0 && val < 4294967296), "The size must be a number larger than 0 and less than 4294967296.");
-        size = Uint32Array.from(size);
-        let length = size.reduce((acc, val) => acc * val, 1);
+        assert(size.length > 0, "The size is not defined.");
+        assert(size.every(val => val > 0 && val === parseInt(val)), "The size must be an integer larger than 0.");
+        const length = size.reduce((acc, val) => acc * val, 1);
         super(length);
-        _.define(this, $type, size.toString());
-        _.define(this, $size, size);
-        _.define(this, $constructor, new.target);
-        _getLookup(this);
-    }
-
-    get size() {
-        let { [$size]: size } = this;
-        return size.slice(0);
-    }
-
-    get dim() {
-        let { [$size]: size } = this;
-        return size.length;
-    }
-
-    getIndex(...pos) {
-        let { [$size]: size } = this;
-        _.assert(pos.length === size.length, "The position must have the same dimension as the tensors.");
-        pos = Uint32Array.from(pos);
-        _.assert(pos.every((val, i) => val < size[i]), "Position out of range.");
-        let { indexFactor } = _getLookup(this);
-        let index = 0;
-        for (let i = 0; i < pos.length; i++) {
-            index += pos[i] * indexFactor[i];
+        const sizeID = size.toString();
+        if (_sizeCache.has(sizeID)) {
+            Object.assign(this, _sizeCache.get(sizeID));
+        } else {
+            const cache = Object.freeze({
+                /**
+                 * @type {number}
+                 * @member {Tensor}
+                 */
+                order: size.length,
+                /**
+                 * @type {Array<number>}
+                 * @member {Tensor}
+                 */
+                size: Object.freeze(size),
+                /**
+                 * @type {Array<number>}
+                 * @member {Tensor}
+                 */
+                offset: Object.freeze(_calcIndexOffset(size))
+            });
+            _sizeCache.set(sizeID, cache);
+            Object.assign(this, cache);
         }
-        return index;
     }
 
-    getValue(...pos) {
-        let index = this.getIndex(...pos);
-        return this[index];
-    }
-
-    getPosition(index) {
-        _.assert(_.is.number(index), "The index must be a number.");
-        index = Math.max(0, parseInt(index));
-        let { [$size]: size } = this;
-        _.assert(index < this.length, "Index out of range.");
-        let { indexFactor } = _getLookup(this);
-        let pos = new Uint32Array(size.length);
-        for (let i = 0; i < pos.length; i++) {
-            let factor = indexFactor[i];
-            let tmp = index % factor;
-            pos[i] = (index - tmp) / factor;
-            index = tmp;
+    /**
+     * @returns {Tensor}
+     */
+    clone() {
+        const result = new Tensor(...this.size);
+        for (let i = 0; i < this.length; i++) {
+            result[i] = this[i];
         }
-        return pos;
-    }
-
-    toString() {
-        let { [$size]: size, [$constructor]: constructor } = this;
-        return `${constructor.name}<${size.join(", ")}> [ ${this.join(", ")} ]`;
-    }
-
-    static from(arrayLike, size, mapFn, thisArg) {
-        // TODO rethink and rework <- what do you want to accomplish with that in reality?
-        let values = arrayLike.length > 0 ? arrayLike : Array.from(arrayLike);
-        if (!size) size = values instanceof Tensor ? values.size : [values.length];
-        let result = new this(...size); // NOTE <- this <- Tensor
-        values.forEach((value, index) => result[index] = value);
         return result;
     }
 
+    /**
+     * @param  {...Tensor} tensors 
+     * @returns {this}
+     */
+    add(...tensors) {
+        assert(tensors.every(tensor => tensor instanceof Tensor && tensor.size === this.size),
+            "For entrywise addition, all arguments must be tensors of the same size.");
+        for (let tensor of tensors) {
+            for (let i = 0; i < this.length; i++) {
+                this[i] += tensor[i];
+            }
+        }
+        return this;
+    }
+
+    /**
+     * @param  {...Tensor} tensors 
+     * @returns {this}
+     */
+    subtract(...tensors) {
+        assert(tensors.every(tensor => tensor instanceof Tensor && tensor.size === this.size),
+            "For entrywise subtraction, all arguments must be tensors of the same size.");
+        for (let tensor of tensors) {
+            for (let i = 0; i < this.length; i++) {
+                this[i] -= tensor[i];
+            }
+        }
+        return this;
+    }
+
+    /**
+     * @param  {...Tensor} tensors 
+     * @returns {this}
+     */
+    hadMultiply(...tensors) {
+        assert(tensors.every(tensor => tensor instanceof Tensor && tensor.size === this.size),
+            "For entrywise multiplication, all arguments must be tensors of the same size.");
+        for (let tensor of tensors) {
+            for (let i = 0; i < this.length; i++) {
+                this[i] *= tensor[i];
+            }
+        }
+        return this;
+    }
+
+    /**
+     * @param  {...Tensor} tensors 
+     * @returns {this}
+     */
+    hadDevide(...tensors) {
+        assert(tensors.every(tensor => tensor instanceof Tensor && tensor.size === this.size),
+            "For entrywise devision, all arguments must be tensors of the same size.");
+        for (let tensor of tensors) {
+            for (let i = 0; i < this.length; i++) {
+                this[i] /= tensor[i];
+            }
+        }
+        return this;
+    }
+
+    /**
+     * @param {Tensor} tensor 
+     * @param {number|Tensor} factor 
+     * @param {number} [depth=1] 
+     * @returns {Tensor|number}
+     */
+    static product(tensor, factor, depth = 1) {
+        assert(tensor instanceof Tensor, "The product can only be done with a tensor.");
+        assert(depth > 0 && depth === parseInt(depth), "The depth must be an integer larger than 0.");
+        if (typeof factor === "number") {
+            assert(depth === 1, "The depth for scalar product must be 1.");
+            const result = new Tensor(...tensor.size);
+            for (let i = 0; i < tensor.length; i++) {
+                result[i] = tensor[i] * factor;
+            }
+            return result;
+        } else {
+            assert(factor instanceof Tensor, "The factor for the product must be a number or a tensor.");
+            assert(tensor.order >= depth && factor.order >= depth,
+                "The order of tensor and factor must be larger or equal to the depth for the product.");
+            for (let k = 1; k <= depth; k++) {
+                assert(tensor.size[tensor.order - k] === factor.size[depth - k],
+                    "For a product of given depth, that last part of the tensors size must match the first part of the factors size.");
+            }
+            if (tensor.order === depth && factor.order === depth) {
+                let result = 0;
+                for (let i = 0; i < tensor.length; i++) {
+                    result += tensor[i] * factor[i];
+                }
+                return result;
+            } else {
+                const result = new Tensor(...tensor.size.slice(0, -depth), ...factor.size.slice(depth));
+                for (let [t_index, t_value, ...t_indices] of tensor.entries()) {
+                    factorCheck: for (let [f_index, f_value, ...f_indices] of factor.entries()) {
+                        // NOTE This is not efficient and the algorithm should be rewritten, so it does not need 
+                        //      the following check and iterate unnecessarily over those indices. 
+                        for (let k = 1; k <= depth; k++) {
+                            if (t_indices[t_indices.length - k] !== f_indices[depth - k])
+                                continue factorCheck;
+                        }
+                        const indices = [...t_indices.slice(0, -depth), ...f_indices.slice(depth)];
+                        const index = _calcIndex(indices, result.offset);
+                        result[index] += t_value * f_value;
+                    }
+                }
+                return result;
+            }
+        }
+    }
+
+    /**
+     * @returns {Iterator<[number, number, ...number]>}
+     * @override
+     * @generator
+     */
+    * entries() {
+        const indices = (new Array(this.order)).fill(0);
+        let index = 0, pos = this.order - 1;
+        while (pos >= 0) {
+            if (indices[pos] === this.size[pos] - 1) {
+                pos--;
+            } else {
+                yield [index, this[index], ...indices];
+                index++;
+                indices[pos]++;
+                while (pos < this.order - 1) {
+                    pos++;
+                    indices[pos] = 0;
+                }
+            }
+        }
+        yield [index, this[index], ...indices];
+        assert(index === this.length - 1, "The number of iterations does not match the length of the tensor.");
+    }
+
+    /**
+     * @returns {Iterator<[...number]>}
+     * @generator
+     */
+    * indices() {
+        const indices = (new Array(this.order)).fill(0);
+        let index = 0, pos = this.order - 1;
+        while (pos >= 0) {
+            if (indices[pos] === this.size[pos] - 1) {
+                pos--;
+            } else {
+                yield [...indices];
+                index++;
+                indices[pos]++;
+                while (pos < this.order - 1) {
+                    pos++;
+                    indices[pos] = 0;
+                }
+            }
+        }
+        yield [...indices];
+        assert(index === this.length - 1, "The number of iterations does not match the length of the tensor.");
+    }
+
+    /**
+     * @typedef {function} Tensor~Callback
+     * @param {number} value 
+     * @param {Array<number>} indices 
+     * @param {number} index 
+     * @param {Tensor} tensor
+     */
+
+    /**
+     * @param {Tensor~Callback} callback 
+     * @param {*} [thisArg] 
+     * @returns {this} 
+     * @override
+     */
+    forEach(callback, thisArg) {
+        assert(typeof callback === "function", "The callback is not a function.");
+        for (let [index, value, ...indices] of this.entries()) {
+            callback.call(thisArg, value, indices, index, this);
+        }
+        return this;
+    }
+
+    /**
+     * @param {Tensor~Callback} callback 
+     * @param {*} [thisArg] 
+     * @returns {Tensor} 
+     * @override
+     */
+    map(callback, thisArg) {
+        assert(typeof callback === "function", "The callback is not a function.");
+        const result = new Tensor(...this.size);
+        for (let [index, value, ...indices] of this.entries()) {
+            result[index] = callback.call(thisArg, value, indices, index, this);
+        }
+        return result;
+    }
+
+    /**
+     * @param {Tensor~Callback} callback 
+     * @param {*} [thisArg] 
+     * @returns {boolean} 
+     * @override
+     */
+    every(callback, thisArg) {
+        assert(typeof callback === "function", "The callback is not a function.");
+        for (let [index, value, ...indices] of this.entries()) {
+            if (!callback.call(thisArg, value, indices, index, this))
+                return false;
+        }
+        return true;
+    }
+
+    /**
+     * @param {Tensor~Callback} callback 
+     * @param {*} [thisArg] 
+     * @returns {boolean} 
+     * @override
+     */
+    some(callback, thisArg) {
+        assert(typeof callback === "function", "The callback is not a function.");
+        for (let [index, value, ...indices] of this.entries()) {
+            if (callback.call(thisArg, value, indices, index, this))
+                return true;
+        }
+        return false;
+    }
+
+    /**
+     * @typedef {Array<number|Tensor~JSON>} Tensor~JSON
+     */
+
+    /**
+     * @returns {Tensor~JSON}
+     */
+    toJSON() {
+        // TODO
+    }
+
+    toString() {
+        return `Tensor <${this.size}> [${super.toString()}]`;
+    }
+
+    toLocaleString() {
+        return `Tensor <${this.size}> [${super.toLocaleString()}]`;
+    }
+
+    /**
+     * @param {Tensor|Tensor~JSON} arr
+     * @returns {Tensor} 
+     * @static
+     * @override
+     */
+    static from(arr) {
+        if (arr instanceof Tensor) {
+            const result = new Tensor(...arr.size);
+            for (let i = 0; i < arr.length; i++) {
+                result[i] = arr[i];
+            }
+            return result;
+        } else {
+            // TODO
+        }
+    }
+
+    /**
+     * @param {...number|Tensor~JSON} arr
+     * @returns {Tensor} 
+     * @static
+     * @override
+     */
+    static of(...arr) {
+        return Tensor.from(arr);
+    }
+
+    /**
+     * @type {class<Float64Array>}
+     * @static
+     * @override
+     */
     static get [Symbol.species]() {
-        return Tensor;
+        // NOTE this targets all prototypes that the tensor does not override
+        return Float64Array;
     }
 
 }
 
 module.exports = Tensor;
+
+/**
+ * @param {Array<number>} size 
+ * @returns {Array<number>}
+ * @private
+ */
+function _calcIndexOffset(size) {
+    const offset = new Array(size.length);
+    for (let i = 0; i < size.length; i++) {
+        let factor = 1;
+        for (let j = i + 1; j < size.length; j++) {
+            factor *= size[j];
+        }
+        offset[i] = factor;
+    }
+    // TODO test correctness of offset
+    return offset;
+}
+
+/**
+ * @param {Array<number>} size 
+ * @param {Array<number>} offset 
+ * @returns {number}
+ * @private
+ */
+function _calcIndex(indices, offset) {
+    let index = 0;
+    for (let i = 0; i < indices.length; i++) {
+        index += indices[i] * offset[i];
+    }
+    return index;
+}

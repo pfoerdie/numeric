@@ -186,16 +186,16 @@ class Tensor extends Float64Array {
             } else {
                 const result = new Tensor(...this.size.slice(0, -degree), ...factor.size.slice(degree));
                 for (let [t_index, t_value, ...t_indices] of this.entries()) {
-                    factorCheck: for (let [f_index, f_value, ...f_indices] of factor.entries()) {
+                    indexLoop: for (let [f_index, f_value, ...f_indices] of factor.entries()) {
                         // NOTE This is not efficient and the algorithm should be rewritten, so it does not need 
                         //      the following check and iterate unnecessarily over those indices. 
                         for (let k = 1; k <= degree; k++) {
                             if (t_indices[t_indices.length - k] !== f_indices[degree - k])
-                                continue factorCheck;
+                                continue indexLoop;
                         }
-                        const indices = [...t_indices.slice(0, -degree), ...f_indices.slice(degree)];
-                        const index = _calcIndex(indices, result.offset);
-                        result[index] += t_value * f_value;
+                        const r_indices = [...t_indices.slice(0, -degree), ...f_indices.slice(degree)];
+                        const r_index = _calcIndex(r_indices, result.offset);
+                        result[r_index] += t_value * f_value;
                     }
                 }
                 return result;

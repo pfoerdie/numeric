@@ -177,7 +177,9 @@ class Tensor extends Float64Array {
                 assert(this.size[this.order - k] === factor.size[degree - k],
                     "For a multiplication of given degree, that last part of the tensors size must match the first part of the factors size.");
             }
-            if (this.order === degree && factor.order === degree) {
+            const completeTensor = this.order === degree;
+            const completeFactor = factor.order === degree;
+            if (completeTensor && completeFactor) {
                 let result = 0;
                 for (let i = 0; i < this.length; i++) {
                     result += this[i] * factor[i];

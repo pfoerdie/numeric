@@ -15,9 +15,8 @@ console.log("B: " + B);
 console.log("v: " + v);
 console.log("w: " + w);
 
-console.log("A*v: " + A.multiply(v));
 console.log("v.w: " + v.hadMultiply(w));
 console.log("v*w: " + v.multiply(w));
-console.log("A*v: " + A.multiply(v));
+// console.log("A*v: " + A.multiply(v));
 console.log("v*B: " + v.multiply(B));
 console.log("A*B: " + A.multiply(B));

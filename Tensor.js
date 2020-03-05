@@ -185,7 +185,7 @@ class Tensor extends Float64Array {
                     result += this[i] * factor[i];
                 }
                 return result;
-            } else {
+            } else if (false) {
                 const result = new Tensor(...this.size.slice(0, -degree), ...factor.size.slice(degree));
                 for (let [t_index, t_value, ...t_indices] of this.entries()) {
                     indexLoop: for (let [f_index, f_value, ...f_indices] of factor.entries()) {
@@ -201,6 +201,50 @@ class Tensor extends Float64Array {
                     }
                 }
                 return result;
+            } else {
+                const result = new Tensor(...this.size.slice(0, -degree), ...factor.size.slice(degree));
+                const indices = (new Array(this.order + factor.order - degree)).fill(0);
+                const size = [...this.size, ...factor.size.slice(degree)];
+                let t_index = 0, f_index = 0, r_index = 0, pos = indices.length - 1;
+                indexLoop: while (true) {
+                    console.log(`[${indices}]: result[${r_index}] += this[${t_index}] * factor[${f_index}]`);
+                    result[r_index] += this[t_index] * factor[f_index];
+
+                    while (indices[pos] === size[pos] - 1) {
+                        if (pos > 0) pos--;
+                        else break indexLoop;
+                    }
+
+                    // TODO:
+                    if (pos < this.order - degree) {
+                        r_index++;
+                        t_index++;
+                        f_index = 0;
+                        // r_index -= result.offset[this.order - degree];
+                    } else if (pos < this.order) {
+                        t_index++;
+                        f_index++;
+                        r_index -= result.offset[this.order - degree];
+                    } else {
+                        r_index++;
+                        f_index++;
+                    }
+
+                    if (r_index >= result.length) {
+                        debugger;
+                    }
+
+                    indices[pos]++;
+                    while (pos < indices.length - 1) {
+                        pos++;
+                        indices[pos] = 0;
+                    }
+
+                }
+                assert(t_index === this.length - 1, "The number of iterations over the tensor does not match the length of the tensor.");
+                assert(f_index === factor.length - 1, "The number of iterations over the factor does not match the length of the factor.");
+                assert(r_index === result.length - 1, "The number of iterations over the result does not match the length of the result.");
+                return result;
             }
         }
     }
@@ -211,22 +255,41 @@ class Tensor extends Float64Array {
      * @generator
      */
     * entries() {
+        // const indices = (new Array(this.order)).fill(0);
+        // let index = 0, pos = indices.length - 1;
+        // while (pos >= 0) {
+        //     if (indices[pos] === this.size[pos] - 1) {
+        //         pos--;
+        //     } else {
+        //         yield [index, this[index], ...indices];
+        //         indices[pos]++;
+        //         index++;
+        //         while (pos < indices.length - 1) {
+        //             pos++;
+        //             indices[pos] = 0;
+        //         }
+        //     }
+        // }
+        // yield [index, this[index], ...indices];
+        // assert(index === this.length - 1, "The number of iterations does not match the length of the tensor.");
         const indices = (new Array(this.order)).fill(0);
-        let index = 0, pos = this.order - 1;
-        while (pos >= 0) {
-            if (indices[pos] === this.size[pos] - 1) {
-                pos--;
-            } else {
-                yield [index, this[index], ...indices];
-                index++;
-                indices[pos]++;
-                while (pos < this.order - 1) {
-                    pos++;
-                    indices[pos] = 0;
-                }
+        let index = 0, pos = indices.length - 1;
+        indexLoop: while (true) {
+            yield [index, this[index], ...indices];
+
+            while (indices[pos] === this.size[pos] - 1) {
+                if (pos > 0) pos--;
+                else break indexLoop;
+            }
+
+            index++;
+
+            indices[pos]++;
+            while (pos < indices.length - 1) {
+                pos++;
+                indices[pos] = 0;
             }
         }
-        yield [index, this[index], ...indices];
         assert(index === this.length - 1, "The number of iterations does not match the length of the tensor.");
     }
 
@@ -236,15 +299,15 @@ class Tensor extends Float64Array {
      */
     * indices() {
         const indices = (new Array(this.order)).fill(0);
-        let index = 0, pos = this.order - 1;
+        let index = 0, pos = indices.length - 1;
         while (pos >= 0) {
             if (indices[pos] === this.size[pos] - 1) {
                 pos--;
             } else {
                 yield [...indices];
-                index++;
                 indices[pos]++;
-                while (pos < this.order - 1) {
+                index++;
+                while (pos < indices.length - 1) {
                     pos++;
                     indices[pos] = 0;
                 }

@@ -341,7 +341,10 @@ _contains = {
             _.assert(bbox_i != -1, "calculation not possible for polygons with infinite bounding");
             // the diagonal starts from the point and ends in a corner of the bounding box
             // so outside of the polygon
-            let diaL = Line.from(bPt[$comp][0], aPg[$bbox][bbox_i]);
+            let outside = Position.from(aPg[$bbox][bbox_i]);
+            // to make sure it is outside and not on a corner, go 1 beyond the bbox
+            outside[0] += bbox_i === 0 ? -1 : 1;
+            let diaL = Line.from(bPt[$comp][0], outside);
             return aPg[$comp].every((aLS, i) => {
                 let count = aLS[$comp].filter(aL => _intersects.Line.Line(aL, diaL)).length;
                 if (i > 0) count++;

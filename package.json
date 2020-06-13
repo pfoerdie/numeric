@@ -1,0 +1,27 @@
+{
+    "name": "numeric",
+    "version": "1.0.0",
+    "description": "> more coming ...",
+    "main": "src/index.js",
+    "directories": {
+        "src": "src",
+        "test": "test"
+    },
+    "scripts": {
+        "test": "./node_modules/.bin/jest"
+    },
+    "repository": {
+        "type": "git",
+        "url": "git+https://github.com/Pfoerdie/Numeric.git"
+    },
+    "author": "pfoerdie@gmail.com",
+    "license": "GPL-3.0-or-later",
+    "bugs": {
+        "url": "https://github.com/Pfoerdie/Numeric/issues"
+    },
+    "homepage": "https://github.com/Pfoerdie/Numeric#readme",
+    "dependencies": {},
+    "devDependencies": {
+        "jest": "^26.0.1"
+    }
+}

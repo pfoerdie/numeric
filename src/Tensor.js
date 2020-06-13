@@ -113,6 +113,26 @@ class Tensor {
         // return index === this.data.length - 1;
     } // Tensor#entries
 
+    /**
+     * The first value of an entry is the index in the data
+     * and all following values are the indices of the tensor.
+     * @returns {Iterator<[Number, ...Array<Number>]>} [key, ...indices]
+     */
+    * keys() {
+        const indices = (new Array(this.dim)).fill(0);
+        for (let index = 0, pos = indices.length - 1, max = this.data.length; index < max; index++) {
+            yield [index, ...indices];
+            while (indices[pos] === this.size[pos] - 1) {
+                pos--;
+            }
+            indices[pos]++;
+            while (pos < indices.length - 1) {
+                pos++;
+                indices[pos] = 0;
+            }
+        }
+    } // Tensor#keys
+
     toJSON() {
         const result = new Array(this.size[0]);
         for (let [key, value, ...indices] of this.entries()) {
@@ -128,11 +148,31 @@ class Tensor {
         return result;
     } // Tensor#toJSON
 
-    fromJSON(array) {
-        if (is.string(array)) array = JSON.parse(array);
-        assert(is.array(array), "The argument must be an array.");
-        // TODO
-    } // Tensor#fromJSON
+    static fromJSON(arg) {
+        if (is.string(arg)) arg = JSON.parse(arg);
+        assert(is.array(arg), "Expected an array as argument.");
+        let size = [], temp = arg;
+        while (is.array(temp)) {
+            size.push(temp.length);
+            temp = temp[0];
+        }
+        const result = new Tensor(size);
+        for (let [key, ...indices] of result.keys()) {
+            let target = arg, max = indices.length - 1;
+            for (let pos = 0; pos < max; pos++) {
+                let index = indices[pos];
+                assert(is.array(target[index]) && target[index].length === size[pos + 1],
+                    "Expected an array of length " + size[pos + 1] + " at position " + indices.slice(0, pos - max).reduce((acc, val) => acc + "[" + val + "]", "") + ".");
+                if (!target[index])
+                    target[index] = new Array(this.size[pos + 1]);
+                target = target[index];
+            }
+            assert(is.number(target[indices[max]]),
+                "Expected a number at position " + indices.reduce((acc, val) => acc + "[" + val + "]", "") + ".");
+            result.data[key] = target[indices[max]];
+        }
+        return result;
+    } // Tensor.fromJSON
 
     /**
      * @param {Tensor} basis 
@@ -145,7 +185,7 @@ class Tensor {
             "The tensor product can only be solved with tensors.");
         assert(is.number.integer(degree) && degree > 0,
             "The degree of the product must be an integer > 0.");
-        // TODO
+        // TODO implement tensor product
     } // Tensor.product
 
 } // Tensor

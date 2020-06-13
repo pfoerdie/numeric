@@ -84,3 +84,5 @@ describe("two tensors of the same size should ...", () => {
     });
 
 });
+
+test.todo("correct (de-)serialization with toJSON(/fromJSON)");

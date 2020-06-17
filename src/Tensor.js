@@ -12,7 +12,7 @@ const dataMap = new WeakSet();
 class Tensor {
 
     /**
-     * @param {Array<Number>|Number} size The size must only contain one or more integer greater than zero.
+     * @param {Array<Number>|Number|Float64Array} size The size must only contain one or more integer greater than zero.
      * @param {Float64Array|Number} [data] The length of the data must be the product of the size.
      * @param {...Array<Number>} [args] The rest arguments for the size, if a number is supplied.
      */
@@ -25,6 +25,9 @@ class Tensor {
             } else {
                 size = [size];
             }
+        } else if (size instanceof Float64Array) {
+            data = size;
+            size = [data.length];
         }
 
         assert(is.array.nonempty(size) && size.every(is.number.integer.minmax(1, Infinity)),

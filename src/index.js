@@ -1,2 +1,2 @@
 exports.Tensor = require("./Tensor.js");
-exports.Node = require("./Node.js");
+exports.Neuron = require("./Neuron.js");

@@ -1,24 +1,24 @@
 const { assert, is } = require("./util.js");
 const Tensor = require("./Tensor.js");
 
-class Edge {
+class Axon {
 
     /**
-     * @param {Node} source 
-     * @param {Node|Edge} target 
+     * @param {Neuron} source 
+     * @param {Neuron|Axon} target 
      * @param {Tensor} tensor 
      */
     constructor(source, target, tensor) {
-        /** @type {Node} */
+        /** @type {Neuron} */
         this.source = source;
-        /** @type {Node} */
+        /** @type {Neuron} */
         this.target = target;
         /** @type {Tensor} */
         this.tensor = tensor;
         source._outputs.set(target, this);
         target._inputs.set(source, this);
         Object.freeze(this);
-    } // Edge#constructor
+    } // Axon#constructor
 
     /**
      * @returns {Boolean} 
@@ -26,54 +26,54 @@ class Edge {
     delete() {
         return this.source._outputs.delete(this.target)
             || this.target._inputs.delete(this.source);
-    } // Edge#delete
+    } // Axon#delete
 
-} // Edge
+} // Axon
 
-class Node {
+class Neuron {
 
     /**
-     * @param {Array<Number>|Number} size The size must only contain one or more integer greater than zero.
+     * @param {Array<Number>|Number|Float64Array} size The size must only contain one or more integer greater than zero.
      * @param {Float64Array|Number} [data] The length of the data must be the product of the size.
      * @param {...Array<Number>} [args] The rest arguments for the size, if a number is supplied.
      */
     constructor(size, data, ...args) {
         /** @type {Tensor} */
         this.tensor = new Tensor(size, data, ...args);
-        /** @type {Map<Node, Edge>} */
+        /** @type {Map<Neuron, Axon>} */
         this._inputs = new Map();
-        /** @type {Map<Node, Edge>} */
+        /** @type {Map<Neuron, Axon>} */
         this._outputs = new Map();
         Object.freeze(this);
-    } // Node#constructor
+    } // Neuron#constructor
 
     /**
-     * @returns {Iterator<Edge>} 
+     * @returns {Iterator<Axon>} 
      */
     outputs() {
         return this._outputs.values();
-    } // Node#outputs
+    } // Neuron#outputs
 
     /**
-     * @returns {Iterator<Edge>} 
+     * @returns {Iterator<Axon>} 
      */
     inputs() {
         return this._inputs.values();
-    } // Node#inputs
+    } // Neuron#inputs
 
     /**
-     * @param {Node|Edge} target 
-     * @param {Array<Number>|Number} size The size must only contain one or more integer greater than zero.
+     * @param {Neuron|Axon} target 
+     * @param {Array<Number>|Number|Float64Array} size The size must only contain one or more integer greater than zero.
      * @param {Float64Array|Number} [data] The length of the data must be the product of the size.
      * @param {...Array<Number>} [args] The rest arguments for the size, if a number is supplied.
-     * @returns {Edge|undefined} 
+     * @returns {Axon|undefined} 
      */
     connect(target, size, data, ...args) {
-        assert((target instanceof Node) || (target instanceof Edge), "The target must be an instance of Node or Edge.");
+        assert((target instanceof Neuron) || (target instanceof Axon), "The target must be an instance of Neuron or Axon.");
         if (!this._outputs.has(target))
-            return new Edge(this, target, new Tensor(size, data, ...args));
-    } // Node#connect
+            return new Axon(this, target, new Tensor(size, data, ...args));
+    } // Neuron#connect
 
-} // Node
+} // Neuron
 
-module.exports = Node;
+module.exports = Neuron;

@@ -1,4 +1,4 @@
-const { Tensor } = Numeric = require("../src/index.js");
+const { Tensor } = require("../src/index.js");
 const randomNumber = () => Math.floor(Math.random() * 100);
 const randomFloatArr = (size) => (new Float64Array(size)).map(randomNumber);
 const formatTable = (str) => str.replace(/,(?=\[)/g, ",\n").replace(/,(?=\d)/g, ", ");

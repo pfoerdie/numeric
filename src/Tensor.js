@@ -6,6 +6,9 @@ const sizeMap = new Map();
 /** @type {Map<string, Array>} Maps the size.toString() value to an offset array. */
 const offsetMap = new Map();
 
+/** @type {WeakSet<Float64Array>} */
+const dataMap = new WeakSet();
+
 class Tensor {
 
     /**
@@ -31,6 +34,8 @@ class Tensor {
         if (data) {
             assert(data instanceof Float64Array && data.length === length,
                 "The length of the data must be the product of the size.");
+            assert(!dataMap.has(data),
+                "The data has already been used to construct a tensor.");
             /** @type {Float64Array} */
             this.data = data;
         } else {
@@ -67,6 +72,7 @@ class Tensor {
             offsetMap.set(sizeStr, this.offset);
         }
 
+        dataMap.add(this.data);
         Object.freeze(this);
 
     } // Tensor#constructor
@@ -133,6 +139,9 @@ class Tensor {
         }
     } // Tensor#keys
 
+    /**
+     * @returns {Array<Number|Array>}
+     */
     toJSON() {
         const result = new Array(this.size[0]);
         for (let [key, value, ...indices] of this.entries()) {
@@ -148,6 +157,10 @@ class Tensor {
         return result;
     } // Tensor#toJSON
 
+    /**
+     * @param {Array<Number|Array>} arg 
+     * @returns {Tensor} 
+     */
     static fromJSON(arg) {
         if (is.string(arg)) arg = JSON.parse(arg);
         assert(is.array(arg), "Expected an array as argument.");

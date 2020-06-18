@@ -5,7 +5,7 @@
     "main": "./src/index.js",
     "scripts": {
         "example": "node ./example/launch.js",
-        "test": "./node_modules/.bin/jest"
+        "test": "jest"
     },
     "repository": {
         "type": "git",

@@ -81,6 +81,20 @@ class Tensor {
     } // Tensor#constructor
 
     /**
+     * @param {Tensor} basis 
+     * @param {Tensor} factor 
+     * @param {Number} [degree=1]
+     * @returns {Tensor} 
+     */
+    static product(basis, factor, degree = 1) {
+        assert(basis instanceof Tensor && factor instanceof Tensor,
+            "The tensor product can only be solved with tensors.");
+        assert(is.number.integer(degree) && degree > 0,
+            "The degree of the product must be an integer > 0.");
+        // TODO implement tensor product
+    } // Tensor.product
+
+    /**
      * The first value of an entry is the index in the data,
      * the second value is the value of the data at that location
      * and all following values are the indices of the tensor.
@@ -145,10 +159,10 @@ class Tensor {
     /**
      * @returns {Array<Number|Array>}
      */
-    toJSON() {
-        const result = new Array(this.size[0]);
+    toArray() {
+        const dataArr = new Array(this.size[0]);
         for (let [key, value, ...indices] of this.entries()) {
-            let target = result, max = indices.length - 1;
+            let target = dataArr, max = indices.length - 1;
             for (let pos = 0; pos < max; pos++) {
                 let index = indices[pos];
                 if (!target[index])
@@ -157,24 +171,23 @@ class Tensor {
             }
             target[indices[max]] = value;
         }
-        return result;
-    } // Tensor#toJSON
+        return dataArr;
+    } // Tensor#toArray
 
     /**
-     * @param {Array<Number|Array>} arg 
-     * @returns {Tensor} 
+     * @param {Array<Number|Array>} dataArr 
+     * @returns {Tensor}
      */
-    static fromJSON(arg) {
-        if (is.string(arg)) arg = JSON.parse(arg);
-        assert(is.array(arg), "Expected an array as argument.");
-        let size = [], temp = arg;
+    static fromArray(dataArr) {
+        assert(is.array(dataArr), "The dataArr must be an array.");
+        let size = [], temp = dataArr;
         while (is.array(temp)) {
             size.push(temp.length);
             temp = temp[0];
         }
         const result = new Tensor(size);
         for (let [key, ...indices] of result.keys()) {
-            let target = arg, max = indices.length - 1;
+            let target = dataArr, max = indices.length - 1;
             for (let pos = 0; pos < max; pos++) {
                 let index = indices[pos];
                 assert(is.array(target[index]) && target[index].length === size[pos + 1],
@@ -188,21 +201,30 @@ class Tensor {
             result.data[key] = target[indices[max]];
         }
         return result;
-    } // Tensor.fromJSON
+    } // Tensor.fromArray
 
     /**
-     * @param {Tensor} basis 
-     * @param {Tensor} factor 
-     * @param {Number} [degree=1]
+     * @returns {{"@type": "Tensor", size: Array<Number>, data: Array<Number>}}
+     */
+    toJSON() {
+        return {
+            "@type": "Tensor",
+            "size": Array.from(this.size),
+            "data": Array.from(this.data)
+        };
+    } // Tensor#toJSON
+
+    /**
+     * @param {{"@type": "Tensor", size: Array<Number>, data: Array<Number>}|String} json 
      * @returns {Tensor} 
      */
-    static product(basis, factor, degree = 1) {
-        assert(basis instanceof Tensor && factor instanceof Tensor,
-            "The tensor product can only be solved with tensors.");
-        assert(is.number.integer(degree) && degree > 0,
-            "The degree of the product must be an integer > 0.");
-        // TODO implement tensor product
-    } // Tensor.product
+    static fromJSON(json) {
+        if (is.string(json)) json = JSON.parse(json);
+        assert(is.object.nonnull(json) && json["@type"] === "Tensor",
+            "The json must be a serialized tensor.");
+        const size = Array.from(json["size"]), data = Float64Array.from(json["data"]);
+        return new Tensor(size, data);
+    } // Tensor.fromJSON
 
 } // Tensor
 

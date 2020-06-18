@@ -221,7 +221,7 @@ class Tensor {
     static fromJSON(json) {
         if (is.string(json)) json = JSON.parse(json);
         assert(is.object.nonnull(json) && json["@type"] === "Tensor",
-            "The json must be a serialized tensor.");
+            "The json must be a serialized Tensor.");
         const size = Array.from(json["size"]), data = Float64Array.from(json["data"]);
         return new Tensor(size, data);
     } // Tensor.fromJSON

@@ -1,7 +1,7 @@
 require("../src/index.js");
 
 const example = {
-    Tensor: "./Tensor.example.js",
+    // Tensor: "./Tensor.example.js",
     Neuron: "./Neuron.example.js"
 };
 

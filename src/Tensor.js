@@ -7,7 +7,7 @@ const sizeMap = new Map();
 const offsetMap = new Map();
 
 /** @type {WeakSet<Float64Array>} */
-const dataMap = new WeakSet();
+const assignedData = new WeakSet();
 
 class Tensor {
 
@@ -37,8 +37,8 @@ class Tensor {
         if (data) {
             assert(data instanceof Float64Array && data.length === length,
                 "The length of the data must be the product of the size.");
-            assert(!dataMap.has(data),
-                "The data has already been used to construct a tensor.");
+            assert(!assignedData.has(data),
+                "The data has already been used to construct a Tensor.");
             /** @type {Float64Array} */
             this.data = data;
         } else {
@@ -75,8 +75,8 @@ class Tensor {
             offsetMap.set(sizeStr, this.offset);
         }
 
-        dataMap.add(this.data);
         Object.freeze(this);
+        assignedData.add(this.data);
 
     } // Tensor#constructor
 

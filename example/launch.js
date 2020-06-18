@@ -7,8 +7,8 @@ const example = {
 
 (async (/* async IIFE */) => {
     for (let name in example) {
-        const timer = `Example<${name}>`;
-        console.log(`${timer}: start`);
+        const timer = `\nExample<${name}>`;
+        console.log(`${timer}: start\n`);
         console.time(timer);
         await require(example[name]);
         console.timeEnd(timer);

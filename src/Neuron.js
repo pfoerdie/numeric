@@ -170,7 +170,40 @@ class Neuron {
         if (is.string(json)) json = JSON.parse(json);
         assert(is.object.nonnull(json) && is.array.nonempty(json["@graph"]),
             "The json must include a serialized Neuron graph.");
-        // TODO
+        /** @type {Map<Neuron|Axon, Number>} */
+        const idMap = new Map();
+        /** @type {Set<{"@type": "Axon"}>} */
+        const missing = new Set();
+        for (let elem of json["@graph"]) {
+            if (elem["@type"] === "Neuron") {
+                assert(is.number(elem["@id"]) && !idMap.has(elem["@id"]),
+                    "The @id must be a unique number.");
+                /** @type {Neuron} */
+                const neuron = new Neuron(Tensor.fromJSON(elem["tensor"]));
+                idMap.set(elem["@id"], neuron);
+            } else if (elem["@type"] === "Axon") {
+                missing.add(elem);
+            }
+        }
+        /** @type {Number} */
+        let prevMissing;
+        while (missing.size > 0 && missing.size !== prevMissing) {
+            prevMissing = missing.size;
+            for (let elem of missing) {
+                /** @type {Neuron} */
+                const source = idMap.get(elem["source"]);
+                /** @type {Neuron} */
+                const target = idMap.get(elem["target"]);
+                if (!source || !target) continue;
+                assert(source instanceof Neuron, "The source must be a Neuron.");
+                assert(is.number(elem["@id"]) && !idMap.has(elem["@id"]),
+                    "The @id must be a unique number.");
+                const axon = source.connect(target, Tensor.fromJSON(elem["tensor"]));
+                idMap.set(elem["@id"], axon); // TODO implement new strategy
+                missing.delete(elem);
+            }
+        }
+        return idMap.get(0);
     } // Neuron.fromJSON
 
 } // Neuron

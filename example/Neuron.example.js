@@ -1,6 +1,7 @@
 const { Neuron } = require("../src/index.js");
 const randomNumber = () => Math.floor(Math.random() * 100);
 const randomFloatArr = (size) => (new Float64Array(size)).map(randomNumber);
+const getJSON = (obj) => JSON.stringify(obj).replace(/[,:\[\]{}()]/g, match => match + " ").replace(/"/g, "");
 const activator = (value, bias) => (Math.tanh(value - bias) + 1) / 2;
 // const results = [];
 
@@ -25,6 +26,7 @@ const activator = (value, bias) => (Math.tanh(value - bias) + 1) / 2;
 // }
 
 // console.log(...results);
+
 ((/* IIFE */) => {
     const n0 = new Neuron(randomFloatArr(2));
     const n1 = new Neuron(randomFloatArr(2));
@@ -33,7 +35,12 @@ const activator = (value, bias) => (Math.tanh(value - bias) + 1) / 2;
     const a0_1 = n0.connect(n1, randomFloatArr(1));
     const a1_2 = n1.connect(n2, randomFloatArr(1));
 
-    console.log(n0.toJSON()["@graph"]);
-
-
+    const m0 = Neuron.fromJSON(JSON.stringify(n0));
+    console.log(
+        n0.tensor.data, m0.tensor.data,
+        n0 === m0,
+        n0.tensor === m0.tensor,
+        n0.tensor.data === m0.tensor.data
+    );
+    console.log("\n" + getJSON(m0));
 })(/* IIFE */);

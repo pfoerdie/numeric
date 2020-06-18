@@ -24,8 +24,9 @@ class Axon {
      * @returns {Boolean} 
      */
     delete() {
-        return this.source._outputs.delete(this.target)
-            || this.target._inputs.delete(this.source);
+        const rmTarget = this.source._outputs.delete(this.target);
+        const rmSource = this.target._inputs.delete(this.source);
+        return rmTarget || rmSource;
     } // Axon#delete
 
 } // Axon

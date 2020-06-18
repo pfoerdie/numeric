@@ -2,12 +2,9 @@
     "name": "numeric",
     "version": "1.0.0",
     "description": "> more coming ...",
-    "main": "src/index.js",
-    "directories": {
-        "src": "src",
-        "test": "test"
-    },
+    "main": "./src/index.js",
     "scripts": {
+        "example": "node ./example/launch.js",
         "test": "./node_modules/.bin/jest"
     },
     "repository": {

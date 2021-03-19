@@ -3,8 +3,11 @@
     "version": "1.0.0",
     "description": "> more coming ...",
     "main": "./src/index.js",
+    "dependencies": {},
+    "devDependencies": {
+        "jest": "^26.0.1"
+    },
     "scripts": {
-        "example": "node ./example/launch.js",
         "test": "jest"
     },
     "repository": {
@@ -16,9 +19,5 @@
     "bugs": {
         "url": "https://github.com/Pfoerdie/Numeric/issues"
     },
-    "homepage": "https://github.com/Pfoerdie/Numeric#readme",
-    "dependencies": {},
-    "devDependencies": {
-        "jest": "^26.0.1"
-    }
+    "homepage": "https://github.com/Pfoerdie/Numeric#readme"
 }

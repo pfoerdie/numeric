@@ -1,4 +1,4 @@
-const { Tensor } = Numeric = require("../src/index.js");
+const { Tensor } = Numeric = require("../src/index.js.js");
 /** {@link https://jestjs.io/docs/en/expect Expect - Jest} */
 
 describe("constructing a tensor ...", () => {

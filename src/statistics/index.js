@@ -1,3 +1,5 @@
-const statistics = exports;
+const
+    statistics = exports,
+    { util } = require('../core');
 
-module.exports = Object.freeze({ ...exports });
+util.lock.all(statistics);

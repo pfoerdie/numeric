@@ -1,4 +1,5 @@
-const { assert, is } = require('../util');
+const
+    { assert, is, util } = require('../core');
 
 /** @type {Map<string, Array>} Maps the size.toString() value to a size array. */
 const sizeMap = new Map();
@@ -54,7 +55,7 @@ class Tensor {
             this.size = sizeMap.get(sizeStr);
         } else {
             /** @type {Array<Number>} */
-            this.size = Object.freeze(Array.from(size));
+            this.size = util.freeze(Array.from(size));
             sizeMap.set(sizeStr, this.size);
         }
 
@@ -71,11 +72,11 @@ class Tensor {
                 offset[i] = factor;
             }
             /** @type {Array<Number>} */
-            this.offset = Object.freeze(offset);
+            this.offset = util.freeze(offset);
             offsetMap.set(sizeStr, this.offset);
         }
 
-        Object.freeze(this);
+        util.lock(this);
         assignedData.add(this.data);
 
     } // Tensor#constructor

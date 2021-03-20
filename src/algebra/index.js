@@ -1,5 +1,7 @@
-const algebra = exports;
+const
+    algebra = exports,
+    { util } = require('../core');
 
 algebra.Tensor = require('./Tensor');
 
-module.exports = Object.freeze({ ...exports });
+util.lock.all(algebra);

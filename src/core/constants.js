@@ -3,6 +3,7 @@ const
     { util } = require('.');
 
 constants.$$iterator = Symbol.iterator;
+constants.$$species = Symbol.species;
 constants.$$instance = Symbol.hasInstance;
 
 constants.PI = Math.PI;

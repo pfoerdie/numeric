@@ -1,5 +1,5 @@
 {
-    "name": "numeric",
+    "name": "@pfoerdie/numeric",
     "version": "1.0.0",
     "description": "> more coming ...",
     "main": "./src/index.js",

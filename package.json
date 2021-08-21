@@ -3,6 +3,9 @@
     "version": "1.0.0",
     "description": "> more coming ...",
     "main": "./src/index.js",
+    "files": [
+        "src/*"
+    ],
     "dependencies": {},
     "devDependencies": {
         "jest": "^26.0.1"

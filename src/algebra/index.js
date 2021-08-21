@@ -1,7 +1,8 @@
 const
     algebra = exports,
-    { util } = require('../core');
+    core = require('../core'),
+    util = require('@pfoerdie/utility');
 
 algebra.Tensor = require('./Tensor');
 
-util.lock.all(algebra);
+util.prop.lock.all(algebra);

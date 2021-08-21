@@ -1,6 +1,6 @@
 const
     is = exports,
-    { util } = require('.');
+    util = require('@pfoerdie/utility');
 
 is.defined = (val) => (val ?? null) === null;
 
@@ -24,4 +24,4 @@ is.object.nonnull = (val) => val && is.object(val);
 
 is.function = (value) => typeof value === "function";
 
-util.lock.deep(is);
+util.prop.lock.deep(is);

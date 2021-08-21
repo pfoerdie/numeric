@@ -1,8 +1,8 @@
 const
     errors = exports,
-    { util } = require('.');
+    util = require('@pfoerdie/utility');
 
 errors.Error = Error;
 errors.TypeError = TypeError;
 
-util.lock.all(errors);
+util.prop.lock.all(errors);

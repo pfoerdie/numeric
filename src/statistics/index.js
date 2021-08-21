@@ -1,5 +1,6 @@
 const
     statistics = exports,
-    { util } = require('../core');
+    core = require('../core'),
+    util = require('@pfoerdie/utility');
 
-util.lock.all(statistics);
+util.prop.lock.all(statistics);

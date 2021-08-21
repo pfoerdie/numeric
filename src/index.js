@@ -1,9 +1,11 @@
-const numeric = exports;
+const
+    numeric = exports,
+    util = require('@pfoerdie/utility');
 
-const { util } = numeric.core = require('./core');
+numeric.core = require('./core');
 numeric.algebra = require('./algebra');
 numeric.analysis = require('./analysis');
 numeric.statistics = require('./statistics');
 
-util.lock.all(numeric);
-// util.freeze.deep(numeric);
+util.prop.lock.all(numeric);
+// util.prop.lock.all.deep(numeric);

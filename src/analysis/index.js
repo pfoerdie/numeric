@@ -1,5 +1,6 @@
 const
     analysis = exports,
-    { util } = require('../core');
+    core = require('../core'),
+    util = require('@pfoerdie/utility');
 
-util.lock.all(analysis);
+util.prop.lock.all(analysis);

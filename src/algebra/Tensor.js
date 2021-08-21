@@ -1,5 +1,7 @@
 const
-    { assert, is, util } = require('../core');
+    core = require('../core'),
+    { is } = require('../core'),
+    util = require('@pfoerdie/utility');
 
 /** @type {Map<string, Array>} Maps the size.toString() value to a size array. */
 const sizeMap = new Map();
@@ -31,14 +33,14 @@ class Tensor {
             size = [data.length];
         }
 
-        assert(is.array.nonempty(size) && size.every(is.number.integer.minmax(1, Infinity)),
+        util.assert(is.array.nonempty(size) && size.every(is.number.integer.minmax(1, Infinity)),
             'The size must only contain one or more integer greater than zero.');
 
         const length = size.reduce((acc, val) => acc * val, 1);
         if (data) {
-            assert(data instanceof Float64Array && data.length === length,
+            util.assert(data instanceof Float64Array && data.length === length,
                 'The length of the data must be the product of the size.');
-            assert(!assignedData.has(data),
+            util.assert(!assignedData.has(data),
                 'The data has already been used to construct a Tensor.');
             /** @type {Float64Array} */
             this.data = data;
@@ -55,7 +57,7 @@ class Tensor {
             this.size = sizeMap.get(sizeStr);
         } else {
             /** @type {Array<Number>} */
-            this.size = util.freeze(Array.from(size));
+            this.size = Object.freeze(Array.from(size));
             sizeMap.set(sizeStr, this.size);
         }
 
@@ -72,11 +74,11 @@ class Tensor {
                 offset[i] = factor;
             }
             /** @type {Array<Number>} */
-            this.offset = util.freeze(offset);
+            this.offset = Object.freeze(offset);
             offsetMap.set(sizeStr, this.offset);
         }
 
-        util.lock(this);
+        util.prop.lock.all(this);
         assignedData.add(this.data);
 
     } // Tensor#constructor
@@ -88,9 +90,9 @@ class Tensor {
      * @returns {Tensor} 
      */
     static product(basis, factor, degree = 1) {
-        assert(basis instanceof Tensor && factor instanceof Tensor,
+        util.assert(basis instanceof Tensor && factor instanceof Tensor,
             'The tensor product can only be solved with tensors.');
-        assert(is.number.integer(degree) && degree > 0,
+        util.assert(is.number.integer(degree) && degree > 0,
             'The degree of the product must be an integer > 0.');
         // TODO implement tensor product
     } // Tensor.product
@@ -180,7 +182,7 @@ class Tensor {
      * @returns {Tensor}
      */
     static fromArray(dataArr) {
-        assert(is.array(dataArr), 'The dataArr must be an array.');
+        util.assert(is.array(dataArr), 'The dataArr must be an array.');
         let size = [], temp = dataArr;
         while (is.array(temp)) {
             size.push(temp.length);
@@ -191,13 +193,13 @@ class Tensor {
             let target = dataArr, max = indices.length - 1;
             for (let pos = 0; pos < max; pos++) {
                 let index = indices[pos];
-                assert(is.array(target[index]) && target[index].length === size[pos + 1],
+                util.assert(is.array(target[index]) && target[index].length === size[pos + 1],
                     'Expected an array of length ' + size[pos + 1] + ' at position ' + indices.slice(0, pos - max).reduce((acc, val) => acc + '[' + val + ']', '') + '.');
                 if (!target[index])
                     target[index] = new Array(this.size[pos + 1]);
                 target = target[index];
             }
-            assert(is.number(target[indices[max]]),
+            util.assert(is.number(target[indices[max]]),
                 'Expected a number at position ' + indices.reduce((acc, val) => acc + '[' + val + ']', '') + '.');
             result.data[key] = target[indices[max]];
         }
@@ -221,7 +223,7 @@ class Tensor {
      */
     static fromJSON(json) {
         if (is.string(json)) json = JSON.parse(json);
-        assert(is.object.nonnull(json) && json.type === 'Tensor',
+        util.assert(is.object.nonnull(json) && json.type === 'Tensor',
             'The json must be a serialized Tensor.');
         const size = Array.from(json.size), data = Float64Array.from(json.data);
         return new Tensor(size, data);

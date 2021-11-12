@@ -207,7 +207,7 @@ class Tensor {
     } // Tensor.fromArray
 
     /**
-     * @returns {{'@type': 'Tensor', size: Array<Number>, data: Array<Number>}}
+     * @returns {{type: 'Tensor', size: Array<Number>, data: Array<Number>}}
      */
     toJSON() {
         return {
@@ -218,7 +218,7 @@ class Tensor {
     } // Tensor#toJSON
 
     /**
-     * @param {{'@type': 'Tensor', size: Array<Number>, data: Array<Number>}|String} json 
+     * @param {{type: 'Tensor', size: Array<Number>, data: Array<Number>}|String} json 
      * @returns {Tensor} 
      */
     static fromJSON(json) {

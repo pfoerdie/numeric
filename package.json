@@ -10,7 +10,7 @@
         "@pfoerdie/utility": "^1.0.0"
     },
     "devDependencies": {
-        "jest": "^26.0.1"
+        "jest": "^27.3.1"
     },
     "scripts": {
         "test": "jest"

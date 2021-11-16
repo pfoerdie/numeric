@@ -8,4 +8,3 @@ numeric.analysis = require('./analysis');
 numeric.statistics = require('./statistics');
 
 util.prop.lock.all(numeric);
-// util.prop.lock.all.deep(numeric);

@@ -188,7 +188,8 @@ class Tensor {
             size = [...basis.size, ...factor.size.slice(degree)],
             max = indices.length - 1,
             b_max = basis.dim - 1,
-            f_min = basis.dim - degree;
+            f_min = basis.dim - degree,
+            p_offset = product.offset.slice(f_min).reduce((acc, val) => acc + val, 0);
 
         let
             pos = max,
@@ -217,6 +218,7 @@ class Tensor {
                 // p_index -= product.offset[f_min];               // works: 0/4
                 // p_index -= product.offset[pos];                 // works: 0/4
                 // p_index -= product.offset[pos - 1] - 1;         // works: 2/4
+                // p_index -= p_offset;                            // works: 1/4
                 b_index++;
                 f_index++;
             }

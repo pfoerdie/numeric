@@ -15,6 +15,18 @@
     "scripts": {
         "test": "jest"
     },
+    "jest": {
+        "reporters": [
+            [
+                "jest-compact-reporter",
+                {
+                    "diffs": false,
+                    "colours": true,
+                    "showPassingTests": true
+                }
+            ]
+        ]
+    },
     "repository": {
         "type": "git",
         "url": "git+https://github.com/Pfoerdie/Numeric.git"

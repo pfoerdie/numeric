@@ -125,4 +125,151 @@ describe('numeric.algebra.Tensor', () => {
         ).toArray()).toMatchObject([8, 8, 8]);
     });
 
+    describe('a tensor product ...', () => {
+
+        beforeEach(() => {
+            jest.spyOn(console, 'warn').mockImplementation(() => { });
+        });
+
+        function saveTensorProduct(basis, factor, degree = 1) {
+            if (basis.dim === degree && factor.dim === degree) {
+                let product = 0;
+                for (let index = 0, max = basis.data.length; index < max; index++) {
+                    product += basis.data[index] * factor.data[index];
+                }
+                return product;
+            } else {
+                const product = new Tensor(...basis.size.slice(0, -degree), ...factor.size.slice(degree));
+                for (let [b_index, b_value, ...b_indices] of basis.entries()) {
+                    indexLoop: for (let [f_index, f_value, ...f_indices] of factor.entries()) {
+                        for (let k = 1; k <= degree; k++) {
+                            if (b_indices[b_indices.length - k] !== f_indices[degree - k])
+                                continue indexLoop;
+                        }
+                        const indices = [...b_indices.slice(0, -degree), ...f_indices.slice(degree)];
+                        let index = 0;
+                        for (let i = 0; i < indices.length; i++) {
+                            index += indices[i] * product.offset[i];
+                        }
+                        product.data[index] += b_value * f_value;
+                    }
+                }
+                return product;
+            }
+        } // saveTensorProduct
+
+        function randomTensor(...size) {
+            const tensor = new Tensor(size);
+            for (let [index] of tensor.entries()) {
+                tensor.data[index] = Math.round(200 * Math.random() - 100);
+            }
+            return tensor;
+        } // randomTensor
+
+        describe('... of degree 1 ...', () => {
+
+            test('with two vectors', () => {
+                expect(Tensor.product(
+                    Tensor.fromArray([1, 2, 3]),
+                    Tensor.fromArray([2, 4, 6])
+                )).toBe(1 * 2 + 2 * 4 + 3 * 6);
+
+                const
+                    basis = randomTensor(6),
+                    factor = randomTensor(6),
+                    product = saveTensorProduct(basis, factor, 1);
+                expect(Tensor.product(basis, factor, 1)).toBe(product);
+            });
+
+            test('with two matrices', () => {
+                expect(saveTensorProduct(
+                    Tensor.fromArray([[1, 2, 3], [2, 4, 6]]),
+                    Tensor.fromArray([[2, 0], [1, 2], [0, 1]])
+                ).toArray()).toMatchObject([[4, 7], [8, 14]]);
+                expect(Tensor.product(
+                    Tensor.fromArray([[1, 2, 3], [2, 4, 6]]),
+                    Tensor.fromArray([[2, 0], [1, 2], [0, 1]])
+                ).toArray()).toMatchObject([[4, 7], [8, 14]]);
+
+                const
+                    basis = randomTensor(6, 9),
+                    factor = randomTensor(9, 5),
+                    product = saveTensorProduct(basis, factor, 1);
+                expect(Tensor.product(basis, factor, 1).toArray())
+                    .toMatchObject(product.toArray());
+            });
+
+            test('with vector and matrix', () => {
+                expect(saveTensorProduct(
+                    Tensor.fromArray([1, 2, 3]),
+                    Tensor.fromArray([[0, 0, 6], [0, 3, 0], [2, 0, 0]])
+                ).toArray()).toMatchObject([6, 6, 6]);
+                expect(Tensor.product(
+                    Tensor.fromArray([1, 2, 3]),
+                    Tensor.fromArray([[0, 0, 6], [0, 3, 0], [2, 0, 0]])
+                ).toArray()).toMatchObject([6, 6, 6]);
+
+                const
+                    basis = randomTensor(6),
+                    factor = randomTensor(6, 5),
+                    product = saveTensorProduct(basis, factor, 1);
+                expect(Tensor.product(basis, factor, 1).toArray())
+                    .toMatchObject(product.toArray());
+            });
+
+            test('with matrix and vector', () => {
+                expect(saveTensorProduct(
+                    Tensor.fromArray([[0, 0, 6], [0, 3, 0], [2, 0, 0]]),
+                    Tensor.fromArray([1, 2, 3]),
+                ).toArray()).toMatchObject([18, 6, 2]);
+                expect(Tensor.product(
+                    Tensor.fromArray([[0, 0, 6], [0, 3, 0], [2, 0, 0]]),
+                    Tensor.fromArray([1, 2, 3]),
+                ).toArray()).toMatchObject([18, 6, 2]);
+
+                const
+                    basis = randomTensor(6, 9),
+                    factor = randomTensor(9),
+                    product = saveTensorProduct(basis, factor, 1);
+                expect(Tensor.product(basis, factor, 1).toArray())
+                    .toMatchObject(product.toArray());
+            });
+
+        });
+
+        describe('... of defree 2 ...', () => {
+
+            test('with two matrices', () => {
+                expect(saveTensorProduct(
+                    Tensor.fromArray([[1, 2, 3], [2, 4, 6], [3, 6, 9]]),
+                    Tensor.fromArray([[2, 1, 0], [1, 2, 1], [0, 3, 2]]),
+                    2
+                )).toBe(1 * 2 + 2 * 1 + 3 * 0 + 2 * 1 + 4 * 2 + 6 * 1 + 3 * 0 + 6 * 3 + 9 * 2);
+                expect(Tensor.product(
+                    Tensor.fromArray([[1, 2, 3], [2, 4, 6], [3, 6, 9]]),
+                    Tensor.fromArray([[2, 1, 0], [1, 2, 1], [0, 3, 2]]),
+                    2
+                )).toBe(1 * 2 + 2 * 1 + 3 * 0 + 2 * 1 + 4 * 2 + 6 * 1 + 3 * 0 + 6 * 3 + 9 * 2);
+
+                const
+                    basis = randomTensor(6, 9),
+                    factor = randomTensor(6, 9),
+                    product = saveTensorProduct(basis, factor, 2);
+                expect(Tensor.product(basis, factor, 2))
+                    .toBe(product);
+            });
+
+            test('with Tensor<5> and Tensor<4>', () => {
+                const
+                    basis = randomTensor(5, 2, 4, 3, 6),
+                    factor = randomTensor(3, 6, 3, 5),
+                    product = saveTensorProduct(basis, factor, 2);
+                expect(Tensor.product(basis, factor, 2).toArray())
+                    .toMatchObject(product.toArray());
+            });
+
+        });
+
+    });
+
 });

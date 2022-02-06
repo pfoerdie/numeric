@@ -213,14 +213,10 @@ class Tensor {
                 b_index++;
                 f_index = 0;
             } else {
-                // p_index -= product.offset[f_min];
-                // p_index -= product.offset[f_min + 1];
-                // p_index -= product.offset[f_min - 1];
-                // p_index -= product.offset[pos];
-                // p_index -= product.offset[pos + 1];
-                // p_index -= product.offset[pos - 1];
-                // p_index -= product.offset[f_min] + product.offset[pos];
-                // p_index -= product.offset[f_min] - product.offset[pos];
+                // void 0;                                         // works: 1/4
+                // p_index -= product.offset[f_min];               // works: 0/4
+                // p_index -= product.offset[pos];                 // works: 0/4
+                // p_index -= product.offset[pos - 1] - 1;         // works: 2/4
                 b_index++;
                 f_index++;
             }

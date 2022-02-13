@@ -135,6 +135,41 @@ describe('numeric.algebra.Tensor', () => {
             return tensor;
         } // randomTensor
 
+        function tensorDotProduct(basis, factor) {
+            let product = 0;
+            for (let index = 0, max = basis.data.length; index < max; index++) {
+                product += basis.data[index] * factor.data[index];
+            }
+            return product;
+        } // tensorDotProduct
+
+        function tensorDataIndex(tensor, indices) {
+            let index = 0;
+            for (let pos = 0; pos < indices.length; pos++) {
+                index += indices[pos] * tensor.offset[pos];
+            }
+            return index;
+        } // tensorDataIndex
+
+        function naiveTensorProduct(basis, factor, degree = 1) {
+            if (basis.dim === degree && factor.dim === degree)
+                return tensorDotProduct(basis, factor);
+
+            const product = new Tensor(...basis.size.slice(0, -degree), ...factor.size.slice(degree));
+            for (let [b_index, b_value, ...b_indices] of basis.entries()) {
+                indexLoop: for (let [f_index, f_value, ...f_indices] of factor.entries()) {
+                    for (let k = 1; k <= degree; k++) {
+                        if (b_indices[b_indices.length - k] !== f_indices[degree - k])
+                            continue indexLoop;
+                    }
+                    const indices = [...b_indices.slice(0, -degree), ...f_indices.slice(degree)];
+                    const index = tensorDataIndex(product, indices);
+                    product.data[index] += b_value * f_value;
+                }
+            }
+            return product;
+        } // naiveTensorProduct
+
         describe('... of degree 1 ...', () => {
 
             test('with two vectors', () => {
@@ -146,12 +181,12 @@ describe('numeric.algebra.Tensor', () => {
                 const
                     basis = randomTensor(6),
                     factor = randomTensor(6),
-                    product = Tensor.naiveProduct(basis, factor, 1);
+                    product = naiveTensorProduct(basis, factor, 1);
                 expect(Tensor.product(basis, factor, 1)).toBe(product);
             });
 
             test('with two matrices', () => {
-                expect(Tensor.naiveProduct(
+                expect(naiveTensorProduct(
                     Tensor.fromArray([[1, 2, 3], [2, 4, 6]]),
                     Tensor.fromArray([[2, 0], [1, 2], [0, 1]])
                 ).toArray()).toMatchObject([[4, 7], [8, 14]]);
@@ -163,13 +198,13 @@ describe('numeric.algebra.Tensor', () => {
                 const
                     basis = randomTensor(6, 9),
                     factor = randomTensor(9, 5),
-                    product = Tensor.naiveProduct(basis, factor, 1);
+                    product = naiveTensorProduct(basis, factor, 1);
                 expect(Tensor.product(basis, factor, 1).toArray())
                     .toMatchObject(product.toArray());
             });
 
             test('with vector and matrix', () => {
-                expect(Tensor.naiveProduct(
+                expect(naiveTensorProduct(
                     Tensor.fromArray([1, 2, 3]),
                     Tensor.fromArray([[0, 0, 6], [0, 3, 0], [2, 0, 0]])
                 ).toArray()).toMatchObject([6, 6, 6]);
@@ -181,13 +216,13 @@ describe('numeric.algebra.Tensor', () => {
                 const
                     basis = randomTensor(6),
                     factor = randomTensor(6, 5),
-                    product = Tensor.naiveProduct(basis, factor, 1);
+                    product = naiveTensorProduct(basis, factor, 1);
                 expect(Tensor.product(basis, factor, 1).toArray())
                     .toMatchObject(product.toArray());
             });
 
             test('with matrix and vector', () => {
-                expect(Tensor.naiveProduct(
+                expect(naiveTensorProduct(
                     Tensor.fromArray([[0, 0, 6], [0, 3, 0], [2, 0, 0]]),
                     Tensor.fromArray([1, 2, 3]),
                 ).toArray()).toMatchObject([18, 6, 2]);
@@ -199,7 +234,7 @@ describe('numeric.algebra.Tensor', () => {
                 const
                     basis = randomTensor(6, 9),
                     factor = randomTensor(9),
-                    product = Tensor.naiveProduct(basis, factor, 1);
+                    product = naiveTensorProduct(basis, factor, 1);
                 expect(Tensor.product(basis, factor, 1).toArray())
                     .toMatchObject(product.toArray());
             });
@@ -209,7 +244,7 @@ describe('numeric.algebra.Tensor', () => {
         describe('... of defree 2 ...', () => {
 
             test('with two matrices', () => {
-                expect(Tensor.naiveProduct(
+                expect(naiveTensorProduct(
                     Tensor.fromArray([[1, 2, 3], [2, 4, 6], [3, 6, 9]]),
                     Tensor.fromArray([[2, 1, 0], [1, 2, 1], [0, 3, 2]]),
                     2
@@ -223,7 +258,7 @@ describe('numeric.algebra.Tensor', () => {
                 const
                     basis = randomTensor(6, 9),
                     factor = randomTensor(6, 9),
-                    product = Tensor.naiveProduct(basis, factor, 2);
+                    product = naiveTensorProduct(basis, factor, 2);
                 expect(Tensor.product(basis, factor, 2))
                     .toBe(product);
             });
@@ -232,7 +267,7 @@ describe('numeric.algebra.Tensor', () => {
                 const
                     basis = randomTensor(5, 2, 4, 3, 6),
                     factor = randomTensor(3, 6, 3, 5),
-                    product = Tensor.naiveProduct(basis, factor, 2);
+                    product = naiveTensorProduct(basis, factor, 2);
                 expect(Tensor.product(basis, factor, 2).toArray())
                     .toMatchObject(product.toArray());
             });
@@ -241,7 +276,7 @@ describe('numeric.algebra.Tensor', () => {
                 const
                     basis = randomTensor(5, 6, 7),
                     factor = randomTensor(6, 7, 5),
-                    product = Tensor.naiveProduct(basis, factor, 2);
+                    product = naiveTensorProduct(basis, factor, 2);
                 expect(Tensor.product(basis, factor, 2).toArray())
                     .toMatchObject(product.toArray());
             });

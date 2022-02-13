@@ -82,10 +82,10 @@ class Tensor {
      * @returns {number}
      */
     _getDataIndex(...indices) {
-        if (util.is.array(inidices[0])) indices = inidices[0];
-        util.assert(inidices.every((val, i) => util.is.number.integer.nonnegative(val) && val < this.size[i]),
+        if (util.is.array(indices[0])) indices = indices[0];
+        util.assert(indices.every((val, i) => util.is.number.integer.nonnegative(val) && val < this.size[i]),
             'The indices must be nonnegative integers less than the size of the tensor.');
-        util.assert(inidices.length === this.dim,
+        util.assert(indices.length === this.dim,
             'The indices must have a length equal to the dimension of the tensor.');
 
         let index = 0;
@@ -246,6 +246,57 @@ class Tensor {
         }
         return product;
     } // Tensor.naiveProduct
+
+    // TODO remove
+    static improvedProduct(basis, factor, degree = 1) {
+        util.assert(basis instanceof Tensor && factor instanceof Tensor,
+            'The tensor product can only be solved with tensors.');
+        util.assert(util.is.number.integer.positive(degree),
+            'The degree of the product must be an integer > 0.');
+        util.assert(degree <= basis.dim && degree <= factor.dim,
+            'The degree of the product must be equal or less than the tensors minimal dimension.');
+        util.assert(basis.size.slice(-degree).every((val, i) => factor.size[i] === val),
+            'The last portion of the basis size must overlap the first portion of the factor size by a length equal to the degree.');
+
+        if (basis.dim === degree && factor.dim === degree) {
+            let product = 0;
+            for (let index = 0, max = basis.data.length; index < max; index++) {
+                product += basis.data[index] * factor.data[index];
+            }
+            return product;
+        }
+
+        const
+            product = new Tensor([...basis.size.slice(0, -degree), ...factor.size.slice(degree)]),
+            indices = (new Array(basis.dim + factor.dim - degree)).fill(0),
+            size = [...basis.size, ...factor.size.slice(degree)],
+            max = indices.length - 1;
+
+        let
+            pos = max;
+
+        indexLoop: while (true) {
+            const
+                p_index = product._getDataIndex(...indices.slice(0, basis.dim - degree), ...indices.slice(basis.dim)),
+                b_index = basis._getDataIndex(indices.slice(0, basis.dim)),
+                f_index = factor._getDataIndex(indices.slice(basis.dim - degree));
+
+            product.data[p_index] += basis.data[b_index] * factor.data[f_index];
+
+            while (indices[pos] === size[pos] - 1) {
+                if (pos > 0) pos--;
+                else break indexLoop;
+            }
+
+            indices[pos]++;
+            while (pos < max) {
+                pos++;
+                indices[pos] = 0;
+            }
+        }
+
+        return product;
+    } // Tensor.improvedProduct
 
     /**
      * The first value of an entry is the index in the data,

@@ -77,42 +77,6 @@ class Tensor {
     } // Tensor#constructor
 
     /**
-     * TODO document and decide to make public
-     * @param  {...number|Array<number>} indices 
-     * @returns {number}
-     */
-    _getDataIndex(...indices) {
-        if (util.is.array(indices[0])) indices = indices[0];
-        util.assert(indices.every((val, i) => util.is.number.integer.nonnegative(val) && val < this.size[i]),
-            'The indices must be nonnegative integers less than the size of the tensor.');
-        util.assert(indices.length === this.dim,
-            'The indices must have a length equal to the dimension of the tensor.');
-
-        let index = 0;
-        for (let pos = 0; pos < indices.length; pos++) {
-            index += indices[pos] * this.offset[pos];
-        }
-        return index;
-    } // Tensor#_getDataIndex
-
-    /**
-     * TODO document and decide to make public
-     * @param {number} index 
-     * @returns {Array<number>}
-     */
-    _getIndices(index) {
-        util.assert(util.is.number.integer.nonnegative(index) && index < this.data.length,
-            'The index must be a nonnegative integer less than the length of the tensor data.');
-
-        const indices = (new Array(this.dim)).fill(0);
-        for (let pos = 0; pos < indices.length; pos++) {
-            indices[pos] = index % this.offset[pos];
-            index -= indices[pos];
-        }
-        return indices;
-    } // Tensor#_getIndices
-
-    /**
      * @param {...Tensor} summands 
      * @returns {Tensor} 
      */
@@ -124,19 +88,20 @@ class Tensor {
         util.assert(summands.every(summand => summand.size === summands[0].size),
             'The tensor sum can only be solved with equally sized tensors.');
 
-        const sum = new Tensor(summands[0].size);
+        const
+            sum = new Tensor(summands[0].size),
+            length = summands[0].data.length;
+
         for (let summand of summands) {
-            for (let index = 0, max = summand.data.length; index < max; index++) {
-                sum.data[index] += summand.data[index];
+            for (let key = 0; key < length; key++) {
+                sum.data[key] += summand.data[key];
             }
         }
+
         return sum;
     } // Tensor.sum
 
     /**
-     * TODO document
-     * TODO improve
-     * NOTE maybe the degree can also be zero
      * @param {Tensor} basis 
      * @param {Tensor} factor 
      * @param {number} [degree=1]
@@ -153,9 +118,10 @@ class Tensor {
             'The last portion of the basis size must overlap the first portion of the factor size by a length equal to the degree.');
 
         if (basis.dim === degree && factor.dim === degree) {
+            // this is the scalar product with 2 tensors
             let product = 0;
-            for (let index = 0, max = basis.data.length; index < max; index++) {
-                product += basis.data[index] * factor.data[index];
+            for (let key = 0, max = basis.data.length; key < max; key++) {
+                product += basis.data[key] * factor.data[key];
             }
             return product;
         }
@@ -171,29 +137,29 @@ class Tensor {
 
         let
             pos = max,
-            p_index = 0,
-            b_index = 0,
-            f_index = 0;
+            p_key = 0,
+            b_key = 0,
+            f_key = 0;
 
-        indexLoop: while (true) {
-            product.data[p_index] += basis.data[b_index] * factor.data[f_index];
+        main_loop: while (true) {
+            product.data[p_key] += basis.data[b_key] * factor.data[f_key];
 
             while (indices[pos] === size[pos] - 1) {
                 if (pos > 0) pos--;
-                else break indexLoop;
+                else break main_loop;
             }
 
             if (pos > b_max) {
-                p_index++;
-                f_index++;
+                p_key++;
+                f_key++;
             } else if (pos < f_min) {
-                p_index++;
-                b_index++;
-                f_index = 0;
+                p_key++;
+                b_key++;
+                f_key = 0;
             } else {
-                p_index -= p_offset;
-                b_index++;
-                f_index++;
+                p_key -= p_offset;
+                b_key++;
+                f_key++;
             }
 
             indices[pos]++;
@@ -207,15 +173,70 @@ class Tensor {
     } // Tensor.product
 
     /**
-     * The first value of an entry is the index in the data,
+     * @param {...Tensor} factors 
+     * @returns {number} 
+     */
+    static scalarProduct(...factors) {
+        util.assert(factors.length >= 2,
+            'The tensor scalar product needs at least 2 factors.');
+        util.assert(factors.every(factor => factor instanceof Tensor),
+            'The tensor scalar product can only be solved with tensors.');
+        util.assert(factors.every(factor => factor.size === factors[0].size),
+            'The tensor scalar product can only be solved with equally sized tensors.');
+
+        const length = factors[0].data.length;
+        let sum = 0;
+
+        for (let key = 0; key < length; key++) {
+            let product = factors[0].data[key];
+            for (let k = 1; k < factors.length; k++) {
+                product *= factors[k].data[key];
+            }
+            sum += product;
+        }
+
+        return sum;
+    } // Tensor.scalarProduct
+
+    /**
+     * @param {...Tensor} factors 
+     * @returns {Tensor} 
+     */
+    static entrywiseProduct(...factors) {
+        util.assert(factors.length >= 2,
+            'The tensor entrywise product needs at least 2 factors.');
+        util.assert(factors.every(factor => factor instanceof Tensor),
+            'The tensor entrywise product can only be solved with tensors.');
+        util.assert(factors.every(factor => factor.size === factors[0].size),
+            'The tensor entrywise product can only be solved with equally sized tensors.');
+
+        const
+            product = new Tensor(factors[0].size),
+            first = factors.shift(),
+            length = first.data.length;
+
+        for (let key = 0; key < length; key++) {
+            product.data[key] = first.data[key];
+        }
+        for (let factor of factors) {
+            for (let key = 0; key < length; key++) {
+                product.data[key] *= factor.data[key];
+            }
+        }
+
+        return product;
+    } // Tensor.entrywiseProduct
+
+    /**
+     * The first value of an entry is the key in the data,
      * the second value is the value of the data at that location
      * and all following values are the indices of the tensor.
      * @returns {Iterator<[number, number, ...Array<number>]>} [key, value, ...indices]
      */
     * entries() {
         const indices = (new Array(this.dim)).fill(0), max = indices.length - 1;
-        for (let index = 0, pos = max; index < this.data.length; index++) {
-            yield [index, this.data[index], ...indices];
+        for (let key = 0, pos = max; key < this.data.length; key++) {
+            yield [key, this.data[key], ...indices];
             while (indices[pos] === this.size[pos] - 1) {
                 pos--;
             }
@@ -226,6 +247,49 @@ class Tensor {
             }
         }
     } // Tensor#entries
+
+    /**
+     * @param  {...number|Array<number>} indices 
+     * @returns {number}
+     */
+    keyAt(...indices) {
+        if (util.is.array(indices[0])) indices = indices[0];
+        util.assert(indices.length === this.dim,
+            'The indices must have a length equal to the dimension of the tensor.');
+        util.assert(indices.every((val, i) => util.is.number.integer.nonnegative(val) && val < this.size[i]),
+            'The indices must be nonnegative integers less than the size of the tensor.');
+
+        let key = 0;
+        for (let pos = 0; pos < indices.length; pos++) {
+            key += indices[pos] * this.offset[pos];
+        }
+        return key;
+    } // Tensor#keyAt
+
+    /**
+     * @param  {...number|Array<number>} indices 
+     * @returns {number}
+     */
+    dataAt(...indices) {
+        const key = this.keyAt(...indices);
+        return this.data[key];
+    } // Tensor#dataAt
+
+    /**
+     * @param {number} key 
+     * @returns {Array<number>}
+     */
+    indicesFor(key) {
+        util.assert(util.is.number.integer.nonnegative(key) && key < this.data.length,
+            'The key must be a nonnegative integer less than the length of the tensor data.');
+
+        const indices = (new Array(this.dim)).fill(0);
+        for (let pos = 0; pos < indices.length; pos++) {
+            indices[pos] = key % this.offset[pos];
+            key -= indices[pos];
+        }
+        return indices;
+    } // Tensor#indicesFor
 
     /**
      * @returns {Array<number|Array>}

@@ -105,7 +105,7 @@ class Tensor {
      * @param {Tensor} basis 
      * @param {Tensor} factor 
      * @param {number} [degree=1]
-     * @returns {Tensor|number} 
+     * @returns {Tensor} 
      */
     static product(basis, factor, degree = 1) {
         util.assert(basis instanceof Tensor && factor instanceof Tensor,
@@ -114,17 +114,10 @@ class Tensor {
             'The degree of the product must be an integer > 0.');
         util.assert(degree <= basis.dim && degree <= factor.dim,
             'The degree of the product must be equal or less than the tensors minimal dimension.');
+        util.assert(degree < basis.dim || degree < factor.dim,
+            'For a degree of the product equal to both the basis dimension and factor dimension use the scalar product instead.');
         util.assert(basis.size.slice(-degree).every((val, i) => factor.size[i] === val),
             'The last portion of the basis size must overlap the first portion of the factor size by a length equal to the degree.');
-
-        if (basis.dim === degree && factor.dim === degree) {
-            // this is the scalar product with 2 tensors
-            let product = 0;
-            for (let key = 0, max = basis.data.length; key < max; key++) {
-                product += basis.data[key] * factor.data[key];
-            }
-            return product;
-        }
 
         const
             product = new Tensor([...basis.size.slice(0, -degree), ...factor.size.slice(degree)]),
@@ -226,6 +219,22 @@ class Tensor {
 
         return product;
     } // Tensor.entrywiseProduct
+
+    /**
+     * @param {number} factor 
+     * @returns {this}
+     */
+    scale(factor) {
+        util.assert(util.is.number(factor),
+            'Scaling a tensor requires a number.');
+        for (let key = 0, length = this.data.length; key < length; key++) {
+            this.data[key] *= factor;
+        }
+        return this;
+    } // Tensor#scale
+
+    // IDEA Tensor#add
+    // TODO other inplace methods
 
     /**
      * The first value of an entry is the key in the data,

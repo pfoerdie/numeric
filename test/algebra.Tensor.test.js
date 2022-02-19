@@ -173,7 +173,7 @@ describe('numeric.algebra.Tensor', () => {
         describe('... of degree 1 ...', () => {
 
             test('with two vectors', () => {
-                expect(Tensor.product(
+                expect(Tensor.scalarProduct(
                     Tensor.fromArray([1, 2, 3]),
                     Tensor.fromArray([2, 4, 6])
                 )).toBe(1 * 2 + 2 * 4 + 3 * 6);
@@ -182,7 +182,7 @@ describe('numeric.algebra.Tensor', () => {
                     basis = randomTensor(6),
                     factor = randomTensor(6),
                     product = naiveTensorProduct(basis, factor, 1);
-                expect(Tensor.product(basis, factor, 1)).toBe(product);
+                expect(Tensor.scalarProduct(basis, factor)).toBe(product);
             });
 
             test('with two matrices', () => {
@@ -249,17 +249,16 @@ describe('numeric.algebra.Tensor', () => {
                     Tensor.fromArray([[2, 1, 0], [1, 2, 1], [0, 3, 2]]),
                     2
                 )).toBe(1 * 2 + 2 * 1 + 3 * 0 + 2 * 1 + 4 * 2 + 6 * 1 + 3 * 0 + 6 * 3 + 9 * 2);
-                expect(Tensor.product(
+                expect(Tensor.scalarProduct(
                     Tensor.fromArray([[1, 2, 3], [2, 4, 6], [3, 6, 9]]),
-                    Tensor.fromArray([[2, 1, 0], [1, 2, 1], [0, 3, 2]]),
-                    2
+                    Tensor.fromArray([[2, 1, 0], [1, 2, 1], [0, 3, 2]])
                 )).toBe(1 * 2 + 2 * 1 + 3 * 0 + 2 * 1 + 4 * 2 + 6 * 1 + 3 * 0 + 6 * 3 + 9 * 2);
 
                 const
                     basis = randomTensor(6, 9),
                     factor = randomTensor(6, 9),
                     product = naiveTensorProduct(basis, factor, 2);
-                expect(Tensor.product(basis, factor, 2))
+                expect(Tensor.scalarProduct(basis, factor))
                     .toBe(product);
             });
 

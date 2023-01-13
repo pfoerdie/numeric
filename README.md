@@ -1,4 +1,4 @@
-# Numeric
+# @pfoerdie/numeric
 
 ## Vector
 

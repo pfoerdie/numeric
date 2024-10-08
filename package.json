@@ -1,40 +1,56 @@
 {
-    "name": "@pfoerdie/numeric",
-    "version": "1.0.0",
-    "description": "> more coming ...",
-    "main": "src/index.js",
-    "files": [
-        "src/*"
-    ],
-    "dependencies": {
-        "@pfoerdie/utility": "^1.0.0"
+  "name": "@pfoerdie/numeric",
+  "version": "1.0.0",
+  "description": "",
+  "main": "dist/index.js",
+  "type": "module",
+  "files": [
+    "src/*",
+    "dist/*"
+  ],
+  "devDependencies": {
+    "@types/jest": "^29.5.12",
+    "@types/node": "^20.14.2",
+    "jest": "^29.7.0",
+    "jest-compact-reporter": "^1.2.9",
+    "ts-jest": "^29.1.4",
+    "tsx": "^4.15.4",
+    "typescript": "^5.4.5"
+  },
+  "scripts": {
+    "test": "jest",
+    "build": "tsc --project tsconfig.build.json"
+  },
+  "jest": {
+    "verbose": true,
+    "testRegex": "/test/.*\\.test\\.[jt]s$",
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "moduleNameMapper": {
+      "@pfoerdie/numeric": "<rootDir>/src/index.ts"
     },
-    "devDependencies": {
-        "jest": "^27.3.1"
+    "transform": {
+      "\\.[jt]s$": "ts-jest"
     },
-    "scripts": {
-        "test": "jest"
-    },
-    "_jest": {
-        "reporters": [
-            [
-                "jest-compact-reporter",
-                {
-                    "diffs": false,
-                    "colours": true,
-                    "showPassingTests": true
-                }
-            ]
-        ]
-    },
-    "repository": {
-        "type": "git",
-        "url": "git+https://github.com/Pfoerdie/Numeric.git"
-    },
-    "author": "pfoerdie@gmail.com",
-    "license": "GPL-3.0-or-later",
-    "bugs": {
-        "url": "https://github.com/Pfoerdie/Numeric/issues"
-    },
-    "homepage": "https://github.com/Pfoerdie/Numeric#readme"
+    "reporters": [
+      [
+        "jest-compact-reporter",
+        {
+          "diffs": false,
+          "colours": true,
+          "showPassingTests": true
+        }
+      ]
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pfoerdie/numeric.git"
+  },
+  "author": "Simon Petrac <pfoerdie@gmail.com>",
+  "license": "GPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/pfoerdie/numeric/issues"
+  },
+  "homepage": "https://github.com/pfoerdie/numeric#readme"
 }

@@ -1,0 +1,35 @@
+{
+  "compilerOptions": {
+    "lib": [
+      "esnext"
+    ],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": false,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "target": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "incremental": false,
+    "plugins": [],
+    "removeComments": false,
+    "declaration": true,
+    "declarationMap": true,
+    "paths": {
+      "@pfoerdie/numeric": [
+        "./src/index.ts"
+      ]
+    },
+    "rootDir": "src",
+    "outDir": "dist"
+  },
+  "include": [
+    "src/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
+}

@@ -19,6 +19,9 @@
     "paths": {
       "@pfoerdie/numeric": [
         "./src/index.ts"
+      ],
+      "@pfoerdie/numeric/*": [
+        "./src/*"
       ]
     }
   },

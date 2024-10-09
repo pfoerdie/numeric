@@ -27,12 +27,14 @@
     "preset": "ts-jest",
     "testEnvironment": "node",
     "moduleNameMapper": {
-      "@pfoerdie/numeric": "<rootDir>/src/index.ts",
-      "@pfoerdie/numeric/(.*)": "<rootDir>/src/$1"
+      "^@pfoerdie/numeric$": "<rootDir>/src/index.ts",
+      "^@pfoerdie/numeric/(.+)$": "<rootDir>/src/$1"
     },
     "transform": {
       "\\.[jt]s$": "ts-jest"
-    },
+    }
+  },
+  "_jest": {
     "reporters": [
       [
         "jest-compact-reporter",
